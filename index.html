@@ -248,6 +248,7 @@ section:last-of-type { border-bottom: none; }
 #writings { background: var(--bg2); }
 
 /* ── Scroll-reveal ── */
+.reveal {
   opacity: 0; transform: translateY(24px);
   transition: opacity .6s ease, transform .6s ease;
 }
@@ -913,7 +914,7 @@ footer {
 }
 </style>
 </head>
-<body>
+<body data-mode="portfolio">
 
 <!-- ══════════════════════════════
      TOP NAVIGATION
@@ -2208,7 +2209,121 @@ footer {
      JAVASCRIPT
 ══════════════════════════════ -->
 <script>
+  /* ============================================================
+   TABLE OF CONTENTS (JavaScript)
+   ------------------------------------------------------------
+   1. App Namespace & Config ............. (you are here)
+   2. App Utilities (fetchJSON, etc.) .....
+   3. Typing Animation ....................
+   4. Dropdown Nav Groups .................
+   5. Scrollspy ............................
+   6. Back to Top ..........................
+   7. Print Resume .........................
+   8. Scroll-Reveal (IntersectionObserver) .
+   9. Hero Canvas Particle Effect ..........
+   ------------------------------------------------------------
+   NOTE: As we add features in later passes (CVE tool, triage
+   simulator, case-study modals, etc.), each one gets its own
+   line here so this file stays navigable even at 3000+ lines.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. APP NAMESPACE
+   ------------------------------------------------------------
+   Everything we build from here on lives inside this one "App"
+   object instead of being loose functions floating around the
+   file. Think of it like a filing cabinet: each drawer (cveTool,
+   triageSimulator, etc.) holds one feature's code, so nothing
+   gets tangled together and nothing overwrites anything else
+   by accident.
+   ------------------------------------------------------------ */
+const App = {
+
+  /* ---- CONFIG ----
+     Central place for settings: API endpoints, feature flags,
+     anything that might need changing later. Instead of hunting
+     through 3000 lines to find a URL, it's always right here. */
+  config: {
+    // NVD API for CVE lookups (Pass 3) — no API key required, but
+    // it does have a low rate limit for anonymous requests.
+    nvdApiUrl: "https://services.nvd.nist.gov/rest/json/cves/2.0",
+
+    // Placeholder for future Stage 3 APIs — filled in later passes.
+    // Example: otxApiUrl: "https://otx.alienvault.com/api/v1/...",
+  },
+
+  /* ---- STATE ----
+     Anywhere we need to remember something across the page
+     (like the triage simulator's current score, or a cached
+     CVE lookup so we don't hit the API twice for the same
+     search) goes here instead of scattered global variables. */
+  state: {},
+
+  /* ---- UTILS ----
+     Shared helper functions every feature can reuse. Right now
+     just one: a safe way to fetch data from an API that never
+     lets a broken request crash the page or show the visitor
+     a scary red error message. */
+  utils: {
+
+    /**
+     * fetchJSON — calls a URL and safely returns JSON data.
+     *
+     * @param {string} url - the API endpoint to call
+     * @returns {Promise<object|null>} - the parsed JSON data,
+     *          or null if anything went wrong (network error,
+     *          bad response, rate limit, etc.)
+     *
+     * WHY THIS EXISTS: every live API tool we build (CVE lookup,
+     * IP checker, hash lookup, GitHub feed...) needs to "go fetch
+     * something from the internet and handle it if it fails."
+     * Writing that logic once here means every tool gets the
+     * same safe, tested behavior instead of five slightly
+     * different copies of similar code.
+     */
+    async fetchJSON(url) {
+      try {
+        const response = await fetch(url);
+
+        // If the server responded but with an error status
+        // (like 404 Not Found or 429 Too Many Requests), we
+        // don't want to pretend it succeeded.
+        if (!response.ok) {
+          console.warn(`Request failed: ${response.status} ${response.statusText}`);
+          return null;
+        }
+
+        const data = await response.json();
+        return data;
+
+      } catch (error) {
+        // This catches network failures — e.g. no internet
+        // connection, or the API being completely down.
+        console.warn("fetchJSON error:", error);
+        return null;
+      }
+    }
+
+  },
+
+  /* ---- FEATURE MODULES (empty for now) ----
+     These are reserved "drawers" for features we build in
+     upcoming passes. They're empty today — just placeholders
+     so the structure exists and nothing needs renaming later. */
+  cveTool: {},
+  triageSimulator: {},
+  socMode: {}   // Stage 3 — SOC Dashboard Mode toggle
+
+};
+
+/* Nothing calls App yet — that's expected. This pass only sets
+   up the structure. You should see ZERO visual or behavior
+   change when you refresh the page. */
+
+
 /* Typing animation */
+
+
 const roles = ['SOC Analyst (Aspiring)','Cybersecurity Analyst (Aspiring)','Network Infrastructure Technician','TryHackMe SOC L1 ✓'];
 let ri=0,ci=0,deleting=false;
 const el=document.getElementById('typing');
