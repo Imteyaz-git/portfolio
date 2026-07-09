@@ -34,6 +34,43 @@
   --sans:     'Segoe UI',system-ui,-apple-system,sans-serif;
   --radius:   12px;
   --nav-h:    58px;
+
+  /* ---- NEW: spacing scale ----
+     Instead of typing "16px" or "24px" all over the file,
+     we use these named steps. If we ever want to make the
+     whole site feel slightly more spacious, we change these
+     8 numbers instead of hunting through hundreds of lines. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ---- NEW: radius scale ----
+     Your original --radius (12px) stays as-is since it's
+     used everywhere already. These add smaller/larger options
+     for future elements that need a different roundedness. */
+  --radius-sm: 6px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  /* ---- NEW: shadow scale ----
+     Your original --shadow stays for existing cards. These
+     add a subtle option (for small elements) and a dramatic
+     option (for things like modals in Pass 6). */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.35);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,.6);
+
+  /* ---- NEW: transition speed scale ----
+     Every hover/animation in the site should use one of these
+     three speeds, instead of each element inventing its own
+     timing. Keeps motion feeling consistent site-wide. */
+  --transition-fast: .15s ease;
+  --transition-base: .25s ease;
+  --transition-slow: .6s ease;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -249,8 +286,9 @@ section:last-of-type { border-bottom: none; }
 
 /* ── Scroll-reveal ── */
 .reveal {
-  opacity: 0; transform: translateY(24px);
-  transition: opacity .6s ease, transform .6s ease;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity var(--transition-slow), transform var(--transition-slow);
 }
 .reveal.visible { opacity: 1; transform: none; }
 .reveal-delay-1 { transition-delay: .1s; }
@@ -2428,10 +2466,32 @@ window.addEventListener('scroll', () => btt.classList.toggle('show', window.scro
 /* Print resume */
 function printResume(){ window.print(); }
 
+
 /* ── Scroll-reveal ── */
+// Instead of manually typing class="reveal" onto 12 different
+// <section> tags in the HTML (easy to forget one, annoying to
+// maintain), we just grab every direct <section> child of <main>
+// here and tag it in JS. Any new section we add later gets this
+// behavior automatically, for free.
+document.querySelectorAll('main > section').forEach((sec, index) => {
+  if (sec.id === 'home') return; // hero is visible immediately on load, don't hide it
+  sec.classList.add('reveal');
+
+  // Stagger delay: alternates between 3 different timing delays
+  // (.reveal-delay-1/2/3, which already exist in your CSS) so
+  // sections don't all pop in at the exact same millisecond —
+  // it feels like a cascade instead of a flash.
+  sec.classList.add(`reveal-delay-${(index % 3) + 1}`);
+});
+
 const revealEls = document.querySelectorAll('.reveal');
 const revealObs = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      revealObs.unobserve(e.target); // stop watching once it's shown — saves performance
+    }
+  });
 }, { threshold: 0.12 });
 revealEls.forEach(el => revealObs.observe(el));
 
