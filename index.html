@@ -355,13 +355,42 @@ section:last-of-type { border-bottom: none; }
 .reveal-delay-2 { transition-delay: .2s; }
 .reveal-delay-3 { transition-delay: .3s; }
 
-/* ── Glowing card border on hover ── */
+/* ── Glowing + glassmorphism card hover ── */
 .glow-hover {
-  transition: border-color .3s, box-shadow .3s;
+  /* "will-change" is a hint to the browser: "this element is
+     about to animate, pre-optimize for it." Prevents a tiny
+     stutter on the very first hover. */
+  will-change: backdrop-filter, border-color, box-shadow;
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    backdrop-filter var(--transition-base),
+    background var(--transition-base);
 }
 .glow-hover:hover {
   border-color: rgba(56,189,248,.4) !important;
   box-shadow: 0 0 0 1px rgba(56,189,248,.15), 0 8px 32px rgba(56,189,248,.07);
+
+  /* This is the actual "glass" effect: blurs whatever is behind
+     the card (other cards, background glow, etc.) as if you're
+     looking through frosted glass. Only visible where the card's
+     background is semi-transparent, so we lighten the background
+     color slightly too, letting some blur show through. */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); /* Safari requires this prefix */
+  background: rgba(19,27,40,0.75); /* var(--card) but with transparency
+                                       added, so backdrop-filter has
+                                       something to actually blur */
+}
+
+/* backdrop-filter isn't supported in every browser (mainly older
+   Firefox versions). This checks support and gracefully skips
+   the blur there — the border-glow and shadow still work fine
+   on their own, so nothing looks broken, just slightly simpler. */
+@supports not (backdrop-filter: blur(1px)) {
+  .glow-hover:hover {
+    background: var(--card);
+  }
 }
 /* ───────────────────────────────────────────
    GLASSMORPHISM HOVER
@@ -417,7 +446,7 @@ section:last-of-type { border-bottom: none; }
   inset: 0;
   pointer-events: none; /* purely decorative — must never block clicks
                             on buttons/links underneath it */
-                            
+
   /* Three overlapping radial gradients (soft colored circles)
      positioned at different spots. Layering multiple gradients
      like this is what creates that "mesh" look, rather than
