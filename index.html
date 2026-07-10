@@ -363,6 +363,43 @@ section:last-of-type { border-bottom: none; }
   border-color: rgba(56,189,248,.4) !important;
   box-shadow: 0 0 0 1px rgba(56,189,248,.15), 0 8px 32px rgba(56,189,248,.07);
 }
+/* ───────────────────────────────────────────
+   GLASSMORPHISM HOVER
+   A reusable class we can add to any card. On hover, it
+   applies a frosted-glass blur + slight brightness lift,
+   layered on top of whatever hover effect the card already has
+   (like glow-hover's border/shadow change).
+─────────────────────────────────────────── */
+.glass-hover {
+  /* transition tells the browser to animate backdrop-filter
+     smoothly instead of snapping instantly on hover */
+  transition: backdrop-filter var(--transition-base),
+              background var(--transition-base);
+}
+
+.glass-hover:hover {
+  /* backdrop-filter blurs whatever is BEHIND this element
+     (the page content showing through), which is what creates
+     the "frosted glass" look. saturate() also slightly boosts
+     color richness of what's behind it, which reads as "glass"
+     rather than just "blurry." */
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%); /* Safari requires this prefix */
+
+  /* Slightly lighter background on hover reinforces the glass
+     feel — like light catching a glass surface. */
+  background: rgba(255,255,255,0.02);
+}
+
+/* backdrop-filter isn't supported in every browser/situation.
+   If it's not supported, we don't want a broken/ugly fallback —
+   we just skip the effect gracefully and the card still has its
+   normal border/shadow hover from glow-hover. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-hover:hover {
+    background: none;
+  }
+}
 
 /* ───────────────────────────────────────────
    HERO (#home)
@@ -377,8 +414,10 @@ section:last-of-type { border-bottom: none; }
 ─────────────────────────────────────────── */
 .hero-mesh {
   position: absolute;
-  inset: 0; /* shorthand for top:0; right:0; bottom:0; left:0; — fills the hero */
-
+  inset: 0;
+  pointer-events: none; /* purely decorative — must never block clicks
+                            on buttons/links underneath it */
+                            
   /* Three overlapping radial gradients (soft colored circles)
      positioned at different spots. Layering multiple gradients
      like this is what creates that "mesh" look, rather than
@@ -1262,7 +1301,7 @@ footer {
     <div class="certs-grid">
 
       <!-- 1. ISC2 CC — In Progress -->
-      <div class="cert-card glow-hover">
+      <div class="cert-card glow-hover glass-hover glass-hover glass-hover glass-hover glass-hover">
         <div class="cert-header">
           <div class="cert-logo">🔐</div>
           <div class="cert-info">
@@ -1287,7 +1326,7 @@ footer {
       </div>
 
       <!-- 2. Tata STRIVE -->
-      <div class="cert-card glow-hover">
+      <div class="cert-card glow-hover glass-hover glass-hover glass-hover glass-hover">
         <div class="cert-header">
           <div class="cert-logo">🎓</div>
           <div class="cert-info">
@@ -1312,7 +1351,7 @@ footer {
       </div>
 
       <!-- 3. Google Cybersecurity Professional -->
-      <div class="cert-card glow-hover">
+      <div class="cert-card glow-hover glass-hover glass-hover glass-hover glass-hover">
         <div class="cert-header">
           <div class="cert-logo">🌐</div>
           <div class="cert-info">
@@ -1337,7 +1376,7 @@ footer {
       </div>
 
       <!-- 4. Cisco Ethical Hacker -->
-      <div class="cert-card glow-hover">
+      <div class="cert-card glow-hover glass-hover glass-hover glass-hover glass-hover">
         <div class="cert-header">
           <div class="cert-logo">⚔️</div>
           <div class="cert-info">
@@ -1362,7 +1401,7 @@ footer {
       </div>
 
       <!-- 5. Cisco Networking Basics -->
-      <div class="cert-card glow-hover">
+      <div class="cert-card glow-hover glass-hover glass-hover glass-hover glass-hover">
         <div class="cert-header">
           <div class="cert-logo">🔌</div>
           <div class="cert-info">
@@ -1388,7 +1427,7 @@ footer {
       </div>
 
       <!-- 6. Cisco Intro to Packet Tracer -->
-      <div class="cert-card glow-hover">
+      <div class="cert-card glow-hover glass-hover glass-hover glass-hover glass-hover">
         <div class="cert-header">
           <div class="cert-logo">🖥️</div>
           <div class="cert-info">
@@ -1413,7 +1452,7 @@ footer {
       </div>
 
       <!-- 7. TryHackMe SOC Level 1 -->
-      <div class="cert-card glow-hover">
+      <div class="cert-card glow-hover glass-hover glass-hover glass-hover glass-hover">
         <div class="cert-header">
           <div class="cert-logo">🚩</div>
           <div class="cert-info">
@@ -1439,7 +1478,7 @@ footer {
       </div>
 
       <!-- 8. TryHackMe Cyber Defence -->
-      <div class="cert-card glow-hover">
+      <div class="cert-card glow-hover glass-hover glass-hover glass-hover glass-hover">
         <div class="cert-header">
           <div class="cert-logo">🛡️</div>
           <div class="cert-info">
@@ -1862,7 +1901,7 @@ footer {
     <div class="projects-grid">
 
       <!-- Project 1: Automated Vulnerability Scanner -->
-      <div class="project-card">
+      <div class="project-card glass-hover">
         <div class="project-card-banner green"></div>
         <div class="project-body">
           <div class="project-header">
@@ -1894,7 +1933,7 @@ footer {
       </div>
 
       <!-- Project 2: Real-Time Threat Detection -->
-      <div class="project-card">
+      <div class="project-card glass-hover">
         <div class="project-card-banner"></div>
         <div class="project-body">
           <div class="project-header">
