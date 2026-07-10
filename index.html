@@ -393,6 +393,79 @@ section:last-of-type { border-bottom: none; }
   }
 }
 /* ───────────────────────────────────────────
+   MICRO-ANIMATIONS (hover/click feedback)
+─────────────────────────────────────────── */
+
+/* CLICK FEEDBACK
+   Every clickable element in this list will slightly shrink
+   the instant you click it, then spring back when released.
+   This is what makes a UI feel "responsive" — it's a tiny
+   detail, but its absence is one of the biggest tells of an
+   unpolished site. We list every interactive class here so
+   the whole site feels consistent, not just a few buttons. */
+.btn:active,
+.nav-resume-btn:active,
+.nav-tab:active,
+.nav-group-btn:active,
+.nav-dropdown-item:active,
+.project-link:active,
+.cert-btn:active,
+.writing-link:active,
+.contact-card:active,
+.chip:active,
+.pill:active,
+.skill-item:active,
+.tool-card:active,
+#btt:active {
+  transform: scale(0.94);
+  transition: transform var(--transition-fast);
+}
+
+/* HOVER POLISH — chips
+   Chips (skill tags like "Python", "Wireshark") currently only
+   change color on hover, with no motion. Adding a tiny lift
+   makes them feel clickable/alive even though most aren't
+   actual links — it signals "this is an interactive surface." */
+.chip {
+  transition: all var(--transition-fast);
+}
+.chip:hover {
+  transform: translateY(-1px);
+}
+
+/* HOVER POLISH — pills
+   Same treatment for the hero pills ("📍 Riyadh", "🎓 BTech...") */
+.pill {
+  transition: all var(--transition-fast);
+}
+.pill:hover {
+  border-color: var(--accent3);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* HOVER POLISH — nav tabs
+   Subtle lift on the top nav tabs (Home, Experience, etc.) so
+   the whole nav bar feels tactile, matching the dropdown groups
+   which already have hover backgrounds. */
+.nav-tab {
+  transition: all var(--transition-fast);
+}
+
+/* Respect reduced-motion users — click feedback and hover lifts
+   are nice-to-have, not essential, so we turn them off cleanly
+   rather than force motion on people who've asked to avoid it. */
+@media (prefers-reduced-motion: reduce) {
+  .btn:active, .nav-resume-btn:active, .nav-tab:active,
+  .nav-group-btn:active, .nav-dropdown-item:active,
+  .project-link:active, .cert-btn:active, .writing-link:active,
+  .contact-card:active, .chip:active, .pill:active,
+  .skill-item:active, .tool-card:active, #btt:active,
+  .chip:hover, .pill:hover {
+    transform: none;
+  }
+}
+/* ───────────────────────────────────────────
    GLASSMORPHISM HOVER
    A reusable class we can add to any card. On hover, it
    applies a frosted-glass blur + slight brightness lift,
