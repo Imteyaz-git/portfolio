@@ -95,6 +95,66 @@ img { display: block; max-width: 100%; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
 /* ───────────────────────────────────────────
+   CURSOR GLOW
+─────────────────────────────────────────── */
+#cursor-glow {
+  /* Fixed = stays positioned relative to the browser window,
+     not the page content, so it can follow the mouse anywhere
+     even as you scroll. */
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  /* The glow itself: a circle of color that fades to nothing.
+     We use the --accent color (cyan) at low opacity. */
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56,189,248,0.10) 0%, transparent 70%);
+
+  /* pointer-events: none is critical — without this, the glow
+     div would sit on top of the page and block clicks on
+     buttons/links underneath it. */
+  pointer-events: none;
+
+  /* We move this element using "transform: translate()" in JS
+     rather than "top/left" — transform is handled by the GPU,
+     which is much smoother/faster than repositioning with
+     top/left on every mouse movement. */
+  transform: translate(-50%, -50%);
+
+  /* Sits above the background but below actual content/nav. */
+  z-index: 1;
+
+  /* Starts invisible — we only reveal it once JS confirms this
+     device actually has a mouse (see the JS below). */
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+#cursor-glow.active {
+  opacity: 1;
+}
+
+/* Only enable the glow on devices that actually have a mouse
+   (hover: hover) and precise pointing (pointer: fine). This
+   automatically excludes phones and tablets — no JS needed to
+   detect device type, the browser tells us via CSS. */
+@media (hover: none), (pointer: coarse) {
+  #cursor-glow {
+    display: none;
+  }
+}
+
+/* Respect users who've asked their OS to reduce motion/effects
+   (an accessibility setting). We just hide the glow entirely
+   for them rather than fighting their preference. */
+@media (prefers-reduced-motion: reduce) {
+  #cursor-glow {
+    display: none;
+  }
+}
+/* ───────────────────────────────────────────
    NAV
 ─────────────────────────────────────────── */
 #topnav {
@@ -953,6 +1013,12 @@ footer {
 </style>
 </head>
 <body data-mode="portfolio">
+
+<!-- This empty div is our "glow". It has no content — we only
+     ever move it around and let its CSS background do the glowing.
+     It sits behind everything else and never blocks clicks
+     (see pointer-events: none in the CSS). -->
+<div id="cursor-glow"></div>  
 
 <!-- ══════════════════════════════
      TOP NAVIGATION
@@ -2545,6 +2611,33 @@ revealEls.forEach(el => revealObs.observe(el));
     requestAnimationFrame(draw);
   }
   draw();
+})();
+
+/* ── Cursor Glow ── */
+// Moves the #cursor-glow div to follow the mouse.
+(function() {
+  const glow = document.getElementById('cursor-glow');
+  if (!glow) return;
+
+  let hasMoved = false; // tracks whether we've seen the first mouse movement yet
+
+  // "mousemove" fires constantly (dozens of times per second) as
+  // the mouse moves. Reading e.clientX/e.clientY tells us exactly
+  // where the cursor is, relative to the browser window.
+  window.addEventListener('mousemove', (e) => {
+    // We use transform instead of top/left for smooth performance
+    // (see CSS comment above for why).
+    glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+
+    // The glow starts invisible (opacity: 0 in CSS) so it doesn't
+    // flash at the top-left corner (0,0) before the mouse has
+    // actually moved. The very first mouse movement reveals it.
+    if (!hasMoved) {
+      glow.classList.add('active');
+      hasMoved = true;
+    }
+  }, { passive: true }); // passive: true tells the browser this listener
+                          // won't block scrolling, which keeps scrolling smooth
 })();
 </script>
 </body>
