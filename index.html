@@ -372,6 +372,57 @@ section:last-of-type { border-bottom: none; }
   background: linear-gradient(160deg, var(--bg2) 0%, var(--bg) 60%);
   position: relative; overflow: hidden;
 }
+/* ───────────────────────────────────────────
+   HERO GRADIENT MESH (animated background)
+─────────────────────────────────────────── */
+.hero-mesh {
+  position: absolute;
+  inset: 0; /* shorthand for top:0; right:0; bottom:0; left:0; — fills the hero */
+
+  /* Three overlapping radial gradients (soft colored circles)
+     positioned at different spots. Layering multiple gradients
+     like this is what creates that "mesh" look, rather than
+     one flat blob. */
+  background:
+    radial-gradient(circle at 20% 30%, rgba(56,189,248,0.12) 0%, transparent 45%),
+    radial-gradient(circle at 80% 20%, rgba(167,139,250,0.10) 0%, transparent 45%),
+    radial-gradient(circle at 50% 80%, rgba(56,189,248,0.08) 0%, transparent 50%);
+
+  /* background-size larger than 100% gives the animation room
+     to "pan" around without hitting an edge and looking cut off. */
+  background-size: 180% 180%;
+
+  /* This is the actual movement — see @keyframes below. 20s is
+     slow on purpose; anything faster would look distracting
+     rather than ambient. ease-in-out makes it drift smoothly
+     rather than moving at a constant robotic speed. */
+  animation: meshDrift 20s ease-in-out infinite;
+
+  /* Sits behind the grid overlay and hero text, but above the
+     plain background color. */
+  z-index: 0;
+
+  /* Blur softens the gradient edges so it reads as atmosphere,
+     not distinct shapes. */
+  filter: blur(40px);
+}
+
+/* The animation itself: slowly pans the gradient's position
+   back and forth, which makes the colored blobs appear to
+   drift and slowly change shape/position. */
+@keyframes meshDrift {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* Same accessibility respect as the cursor glow — if the user's
+   OS says "reduce motion," we freeze this instead of animating. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-mesh {
+    animation: none;
+  }
+}
 .hero-badge {
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--green2);
@@ -1083,12 +1134,16 @@ footer {
      HOME / HERO
 ══════════════════════════════ -->
 <section id="home">
+  <!-- This div holds our animated gradient mesh. It's positioned
+       behind everything else in the hero (see CSS z-index) and
+       purely decorative — no text or content inside it. -->
+  <div class="hero-mesh"></div>
   <div class="hero-grid-overlay"></div>
   <canvas id="hero-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.7;"></canvas>
   <!-- Ambient glow blobs -->
   <div class="ambient-glow" style="width:500px;height:500px;top:-100px;right:-100px;background:var(--accent);"></div>
   <div class="ambient-glow" style="width:300px;height:300px;bottom:-60px;left:10%;background:var(--purple);opacity:.1;"></div>
-  <div style="position:relative;">
+  <div style="position:relative; z-index:2;"></div>
   <div class="wrap">
     <div class="hero-badge">Available for SOC / Cybersecurity Analyst roles</div>
     <div class="hero-prompt">> imteyaz.sh</div>
