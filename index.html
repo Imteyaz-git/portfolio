@@ -273,7 +273,14 @@ section {
   border-bottom: 1px solid var(--border);
 }
 section:last-of-type { border-bottom: none; }
-.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+.wrap { max-width: 900px; margin: 0 auto; padding:  24px; }
+/* The hero section gets its own wider container than the rest
+   of the site, so the two-column layout (text + terminal) has
+   enough room to actually spread out. Every other section keeps
+   the standard 900px .wrap untouched. */
+#home .wrap {
+  max-width: 1200px;
+}
 
 /* ───────────────────────────────────────────
    SECTION LABELS
@@ -619,6 +626,38 @@ section:last-of-type { border-bottom: none; }
 .hero-links {
   display: flex; flex-wrap: wrap; gap: 10px;
 }
+
+/* ───────────────────────────────────────────
+   HERO TWO-COLUMN GRID (60/40)
+─────────────────────────────────────────── */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 7fr 3fr; /* 70/30 split — was 3fr/2fr (60/40) */
+  gap: 40px;
+  align-items: start;
+}
+
+.hero-col-terminal {
+  /* Pushes the terminal to sit right-aligned within its column,
+     and prevents it stretching wider than its max-width */
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Below 900px, drop to a single column — text first, terminal
+   below it. This covers tablets and all phone sizes down to 320px. */
+@media (max-width: 900px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .hero-col-terminal {
+    justify-content: flex-start; /* terminal aligns left like
+                                     everything else once stacked */
+  }
+}
+
+
 .btn {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 18px; border-radius: 8px;
@@ -632,6 +671,134 @@ section:last-of-type { border-bottom: none; }
   color: var(--muted);
 }
 .btn-ghost:hover { border-color: var(--accent3); color: var(--accent); transform: translateY(-1px); }
+
+/* ───────────────────────────────────────────
+   HERO TERMINAL (boot sequence window)
+─────────────────────────────────────────── */
+.hero-terminal {
+  /* Slightly darker than your card color, to feel like an
+     actual terminal app rather than just another content card */
+  background: #0a0f18;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-family: var(--mono);
+  max-width: 460px;
+  margin-top: 96px; /* nudges the terminal down so its top edge
+                        roughly lines up with your name/role area,
+                        instead of starting flush with the badge
+                        at the very top */
+  position: relative;
+
+  /* Pulsing glow: we animate box-shadow between a dim and
+     brighter cyan glow, on a loop. Combined with box-shadow-lg
+     (the drop shadow you already had) via a comma-separated
+     shadow list, so both effects layer together. */
+  animation: terminalGlow 3s ease-in-out infinite;
+}
+@keyframes terminalGlow {
+  0%, 100% {
+    box-shadow: var(--shadow-lg), 0 0 12px rgba(56,189,248,0.10);
+  }
+  50% {
+    box-shadow: var(--shadow-lg), 0 0 24px rgba(56,189,248,0.25);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-terminal { animation: none; }
+}
+
+/* Fake window titlebar with red/yellow/green dots — a visual
+   convention almost everyone recognizes as "this is a terminal" */
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  background: #0f1520;
+  border-bottom: 1px solid var(--border2);
+}
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.terminal-dot.red    { background: #ff5f57; }
+.terminal-dot.yellow { background: #febc2e; }
+.terminal-dot.green  { background: #28c840; }
+.terminal-titlebar-label {
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .02em;
+}
+
+/* Where the typed lines actually appear */
+.terminal-body {
+  padding: 18px 20px;
+  min-height: 150px;
+  font-size: 12.5px;
+  line-height: 2;
+}
+.terminal-line {
+  white-space: pre-wrap; /* preserves spacing, wraps on small screens */
+  color: var(--text);
+}
+/* The "> " prompt symbol before each line, styled like a real CLI */
+.terminal-prompt {
+  color: var(--green);
+  font-weight: 700;
+  margin-right: 2px;
+}
+/* The final "Welcome" line gets highlighted differently — it's
+   the payoff line, so it should visually stand out from the
+   "loading..." lines above it */
+.terminal-line.terminal-line-final {
+  color: var(--accent);
+  font-weight: 700;
+}
+/* Status tag that fades in after a line finishes typing —
+   e.g. "[OK]" in green, like a real system boot log */
+.terminal-status {
+  color: var(--green);
+  font-weight: 700;
+  margin-left: 8px;
+  opacity: 0;
+  animation: statusFadeIn 0.3s ease forwards;
+}
+@keyframes statusFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* The live prompt line shown after boot finishes — styled
+   slightly dimmer than the boot lines since it's just an idle
+   "waiting" state, not an active message */
+.terminal-live-prompt {
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Blinking cursor block that sits at the end of whichever line
+   is currently being typed — removed once that line finishes */
+.terminal-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background: var(--accent);
+  margin-left: 3px;
+  vertical-align: middle;
+  animation: terminalBlink 1s step-end infinite;
+}
+@keyframes terminalBlink {
+  50% { opacity: 0; }
+}
+
+@media (max-width: 700px) {
+  .hero-terminal { max-width: 100%; }
+}
+
 
 /* ───────────────────────────────────────────
    PROJECTS (#projects)
@@ -1286,6 +1453,11 @@ footer {
   <div class="ambient-glow" style="width:300px;height:300px;bottom:-60px;left:10%;background:var(--purple);opacity:.1;"></div>
   <div style="position:relative; z-index:2;"></div>
   <div class="wrap">
+    <!-- hero-grid splits the hero into two columns on desktop:
+         text on the left (~60%), terminal on the right (~40%).
+         On mobile, CSS stacks these into a single column instead. -->
+    <div class="hero-grid">
+    <div class="hero-col-text">
     <div class="hero-badge">Available for SOC / Cybersecurity Analyst roles</div>
     <div class="hero-prompt">> imteyaz.sh</div>
     <h1 class="hero-name">Imteyaz Ali.</h1>
@@ -1314,6 +1486,27 @@ footer {
       <a href="https://github.com/Imteyaz-git" target="_blank" class="btn btn-ghost">💻 GitHub</a>
       <a href="https://tryhackme.com/p/BR28" target="_blank" class="btn btn-ghost">🚩 TryHackMe</a>
     </div>
+    </div><!-- /hero-col-text -->
+
+    <div class="hero-col-terminal">
+    <!-- Terminal boot sequence. For now this just sits stacked
+         below the hero content — Sub-pass 2B will move it into
+         a proper two-column layout next to the text. We're
+         building it here first so we can perfect the typing
+         animation in isolation before touching the layout. -->
+    <div class="hero-terminal" id="hero-terminal">
+      <!-- Fake window titlebar, like a Mac terminal app -->
+      <div class="terminal-titlebar">
+        <span class="terminal-dot red"></span>
+        <span class="terminal-dot yellow"></span>
+        <span class="terminal-dot green"></span>
+        <span class="terminal-titlebar-label">imteyaz@soc:~$</span>
+      </div>
+      <!-- JS fills this in, line by line, character by character -->
+      <div class="terminal-body" id="terminal-body"></div>
+    </div>
+    </div><!-- /hero-col-terminal -->
+    </div><!-- /hero-grid -->
   </div>
   </div>
 </section>
@@ -2512,7 +2705,8 @@ footer {
   /* ============================================================
    TABLE OF CONTENTS (JavaScript)
    ------------------------------------------------------------
-   1. App Namespace & Config ............. (you are here)
+   1. App Namespace & Config ............. 
+   1b. Hero Boot Terminal .................(you are here)
    2. App Utilities (fetchJSON, etc.) .....
    3. Typing Animation ....................
    4. Dropdown Nav Groups .................
@@ -2616,6 +2810,148 @@ const App = {
 
 };
 
+
+/* ------------------------------------------------------------
+   HERO BOOT TERMINAL
+   Types out a fake "system boot" sequence character-by-character,
+   line-by-line, into the #terminal-body div. Runs once per page
+   load — every refresh replays the boot sequence.
+   ------------------------------------------------------------ */
+App.bootTerminal = {
+  // The lines it types, in order. Easy to edit/reorder later —
+  // just change this array, nothing else needs to change.
+  lines: [
+    "Initializing security protocols...",
+    "Loading threat intelligence feeds...",
+    "SIEM connection established...",
+    "Welcome Imteyaz ",
+  ],
+
+  bodyEl: null, // will hold a reference to the #terminal-body element
+
+  init() {
+    this.bodyEl = document.getElementById('terminal-body');
+    if (!this.bodyEl) return; // safety check — if the element
+                               // doesn't exist for some reason,
+                               // don't crash the rest of the page
+
+    // Respect users who've asked their OS to reduce motion —
+    // just show all lines instantly instead of animating them.
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      this.lines.forEach((text, i) => this.renderInstantLine(text, i));
+      return;
+    }
+
+    this.typeLine(0); // start with the first line
+  },
+
+  // Fallback for reduced-motion users — just place the finished
+  // line directly, no character-by-character animation.
+  renderInstantLine(text, index) {
+    const lineEl = document.createElement('div');
+    lineEl.className = 'terminal-line' + (index === this.lines.length - 1 ? ' terminal-line-final' : '');
+    lineEl.innerHTML = `<span class="terminal-prompt">&gt;</span> ${text}`;
+    this.bodyEl.appendChild(lineEl);
+  },
+
+ // Types one full line, character by character, then moves on
+  // to the next line after a short pause.
+  typeLine(lineIndex) {
+    if (lineIndex >= this.lines.length) {
+      // All boot lines are done — show the final "waiting for
+      // input" prompt, teasing the hidden terminal feature we'll
+      // build later in the project.
+      this.showLivePrompt();
+      return;
+    }
+
+    const fullText = this.lines[lineIndex];
+    const isFinalLine = lineIndex === this.lines.length - 1;
+
+    // The "Welcome..." line is the payoff message, not a system
+    // status — so it doesn't get an [OK] tag like the others do.
+    const showsStatusTag = !isFinalLine;
+
+    // Build the line's HTML structure: [prompt symbol] [empty text span] [blinking cursor]
+    const lineEl = document.createElement('div');
+    lineEl.className = 'terminal-line' + (isFinalLine ? ' terminal-line-final' : '');
+
+    const promptEl = document.createElement('span');
+    promptEl.className = 'terminal-prompt';
+    promptEl.textContent = '>';
+    lineEl.appendChild(promptEl);
+
+    lineEl.appendChild(document.createTextNode(' '));
+
+    const textEl = document.createElement('span');
+    lineEl.appendChild(textEl);
+
+    const cursorEl = document.createElement('span');
+    cursorEl.className = 'terminal-cursor';
+    lineEl.appendChild(cursorEl);
+
+    this.bodyEl.appendChild(lineEl);
+
+    // Type one character at a time into textEl
+    let charIndex = 0;
+    const typeNextChar = () => {
+      if (charIndex < fullText.length) {
+        textEl.textContent += fullText[charIndex];
+        charIndex++;
+        // Small randomness in typing speed (28-48ms per character)
+        // makes it feel less robotic than a perfectly even speed.
+        setTimeout(typeNextChar, 28 + Math.random() * 20);
+      } else {
+        // Line finished typing — remove its blinking cursor
+        // (only the currently-typing line should have one)
+        cursorEl.remove();
+
+        // Add the "[OK]" status tag, like a real boot log
+        if (showsStatusTag) {
+          const statusEl = document.createElement('span');
+          statusEl.className = 'terminal-status';
+          statusEl.textContent = '[OK]';
+          lineEl.appendChild(statusEl);
+        }
+
+        // Move on to the next line after a brief pause
+        setTimeout(() => this.typeLine(lineIndex + 1), 400);
+      }
+    };
+    typeNextChar();
+  },
+
+  // Shown once after all boot lines finish — a permanently
+  // blinking cursor at an idle prompt, implying "the system is
+  // ready and listening," which sets up the hidden terminal
+  // easter egg feature we'll build in a later phase.
+  showLivePrompt() {
+    const lineEl = document.createElement('div');
+    lineEl.className = 'terminal-line terminal-live-prompt';
+
+    const promptEl = document.createElement('span');
+    promptEl.className = 'terminal-prompt';
+    promptEl.textContent = 'imteyaz@soc:~$';
+    lineEl.appendChild(promptEl);
+
+    lineEl.appendChild(document.createTextNode(' '));
+
+    // This cursor never gets removed — it blinks indefinitely,
+    // implying the terminal is idle and waiting.
+    const cursorEl = document.createElement('span');
+    cursorEl.className = 'terminal-cursor';
+    lineEl.appendChild(cursorEl);
+
+    this.bodyEl.appendChild(lineEl);
+  } 
+
+    
+   
+};
+
+App.bootTerminal.init(); // kick off the boot sequence immediately
+
 /* Nothing calls App yet — that's expected. This pass only sets
    up the structure. You should see ZERO visual or behavior
    change when you refresh the page. */
@@ -2624,7 +2960,7 @@ const App = {
 /* Typing animation */
 
 
-const roles = ['SOC Analyst (Aspiring)','Cybersecurity Analyst (Aspiring)','Network Infrastructure Technician','TryHackMe SOC L1 ✓'];
+const roles = ['SOC Analyst (Aspiring)','Cybersecurity Analyst (Aspiring)','Network Specialist','TryHackMe SOC L1 ✓'];
 let ri=0,ci=0,deleting=false;
 const el=document.getElementById('typing');
 function type(){
