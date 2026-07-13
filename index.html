@@ -940,6 +940,123 @@ section:last-of-type { border-bottom: none; }
   opacity: .6;
 }
 
+/* Loading state — shown while waiting for NVD's response */
+.cve-loading-state {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+.cve-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  animation: cveSpin 0.8s linear infinite;
+}
+@keyframes cveSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error / empty state — friendly, never a raw error message */
+.cve-error-state {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13.5px;
+  padding: 20px;
+}
+.cve-error-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+/* The actual result card(s). Reuses your existing card look
+   (background/border/radius) so it feels consistent with the
+   rest of the site, rather than inventing a new visual style. */
+.cve-result-area {
+  display: block; /* override the centering flex from 3B — once
+                      we have real results, we want them to stack
+                      top-to-bottom, left-aligned, not centered */
+}
+.cve-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 16px;
+  animation: cveCardIn 0.3s ease;
+}
+@keyframes cveCardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.cve-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.cve-card-id {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.cve-severity-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.cve-severity-badge.critical { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+.cve-severity-badge.high     { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.3); }
+.cve-severity-badge.medium   { background: var(--amber2); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+.cve-severity-badge.low      { background: var(--green2); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+.cve-severity-badge.unknown  { background: var(--bg2); color: var(--muted); border: 1px solid var(--border2); }
+
+.cve-card-desc {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.cve-card-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--dim);
+  font-family: var(--mono);
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.cve-card-meta strong {
+  color: var(--muted);
+  font-weight: 600;
+}
+.cve-card-nvd-link {
+  font-size: 11.5px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  color: var(--muted);
+  transition: all var(--transition-fast);
+  margin-top: 12px;
+  display: inline-block;
+}
+.cve-card-nvd-link:hover {
+  border-color: var(--accent3);
+  color: var(--accent);
+}
+
 
 /* ───────────────────────────────────────────
    WRITINGS (#writings)
@@ -3156,12 +3273,186 @@ App.bootTerminal = {
 
 App.bootTerminal.init(); // kick off the boot sequence immediately
 
-/* Nothing calls App yet — that's expected. This pass only sets
-   up the structure. You should see ZERO visual or behavior
-   change when you refresh the page. */
+/* ------------------------------------------------------------
+   CVE LOOKUP TOOL
+   Handles searching the free NVD (National Vulnerability
+   Database) API and rendering results. Uses App.utils.fetchJSON
+   (built back in Pass 0) so error handling is already consistent
+   with the rest of the site.
+   ------------------------------------------------------------ */
+App.cveTool = {
 
+  resultArea: null,
+  inputEl: null,
+  searchBtn: null,
 
-/* Typing animation */
+  init() {
+    this.resultArea = document.getElementById('cve-result-area');
+    this.inputEl = document.getElementById('cve-search-input');
+    this.searchBtn = document.getElementById('cve-search-btn');
+
+    if (!this.resultArea || !this.inputEl || !this.searchBtn) return; // safety check
+
+    // Clicking the Search button runs a search using whatever
+    // is currently typed in the input box.
+    this.searchBtn.addEventListener('click', () => {
+      this.runSearch(this.inputEl.value.trim());
+    });
+
+    // Also allow pressing Enter inside the input field to search
+    // — a small usability touch most people expect from a
+    // search box.
+    this.inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this.runSearch(this.inputEl.value.trim());
+    });
+
+    // Wire up the 3 example chips (Log4Shell, EternalBlue, etc).
+    // Each chip has a data-cve="CVE-XXXX-XXXXX" attribute — we
+    // read that, put it in the input box, and search it.
+    document.querySelectorAll('.cve-example-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const cveId = chip.dataset.cve;
+        this.inputEl.value = cveId;
+        this.runSearch(cveId);
+      });
+    });
+  },
+
+  /**
+   * Decides whether the search term looks like an exact CVE ID
+   * (e.g. "CVE-2021-44228") or a general keyword (e.g. "log4j"),
+   * then calls the matching NVD query and renders the result.
+   */
+  async runSearch(term) {
+    if (!term) return; // ignore empty searches
+
+    this.showLoading();
+
+    // A CVE ID always follows this exact pattern: CVE-YYYY-NNNN
+    // (4-digit year, then 4+ digit sequence number). If it matches,
+    // we search NVD by exact CVE ID. Otherwise, we treat it as a
+    // free-text keyword search instead.
+    const cveIdPattern = /^CVE-\d{4}-\d{4,}$/i;
+    const isExactId = cveIdPattern.test(term);
+
+    const url = isExactId
+      ? `${App.config.nvdApiUrl}?cveId=${encodeURIComponent(term.toUpperCase())}`
+      : `${App.config.nvdApiUrl}?keywordSearch=${encodeURIComponent(term)}&resultsPerPage=3`;
+
+    const data = await App.utils.fetchJSON(url);
+
+    // fetchJSON already returns null on any failure (network
+    // error, bad status, rate limit, etc) — so we only need to
+    // check for that one case to know something went wrong.
+    if (!data || !data.vulnerabilities || data.vulnerabilities.length === 0) {
+      this.showError(isExactId
+        ? `No results found for "${term}". Double-check the CVE ID format (e.g. CVE-2021-44228).`
+        : `No results found for "${term}". Try a different keyword, or search an exact CVE ID.`
+      );
+      return;
+    }
+
+    this.renderResults(data.vulnerabilities);
+  },
+
+  showLoading() {
+    this.resultArea.innerHTML = `
+      <div class="cve-loading-state">
+        <div class="cve-spinner"></div>
+        <p>Querying NVD database...</p>
+      </div>
+    `;
+  },
+
+  showError(message) {
+    this.resultArea.innerHTML = `
+      <div class="cve-error-state">
+        <div class="cve-error-icon">⚠️</div>
+        <p>${this.escapeHtml(message)}</p>
+      </div>
+    `;
+  },
+
+  /**
+   * Turns an array of NVD "vulnerability" objects into rendered
+   * result cards. NVD's JSON structure is deeply nested, so this
+   * function does the work of pulling out just the fields we
+   * actually want to display.
+   */
+  renderResults(vulnerabilities) {
+    // Build one HTML string for all result cards, then set it
+    // once — faster and simpler than adding cards one at a time.
+    const cardsHtml = vulnerabilities.map(vuln => {
+      const cve = vuln.cve;
+
+      // Description: NVD stores multiple language versions —
+      // we want the English one specifically.
+      const descObj = (cve.descriptions || []).find(d => d.lang === 'en');
+      const description = descObj ? descObj.value : 'No description available.';
+
+      // CVSS score/severity: NVD has several possible metric
+      // versions (v3.1, v3.0, v2). We check them in order of
+      // preference (newest first) and use whichever exists.
+      const metrics = cve.metrics || {};
+      const cvssData =
+        (metrics.cvssMetricV31 && metrics.cvssMetricV31[0]) ||
+        (metrics.cvssMetricV30 && metrics.cvssMetricV30[0]) ||
+        (metrics.cvssMetricV2 && metrics.cvssMetricV2[0]) ||
+        null;
+
+      let score = 'N/A';
+      let severity = 'unknown';
+      if (cvssData) {
+        score = cvssData.cvssData.baseScore;
+        // v2 data uses a different field name for severity than v3
+        severity = (cvssData.cvssData.baseSeverity || cvssData.baseSeverity || 'unknown').toLowerCase();
+      }
+
+      const publishedDate = cve.published
+        ? new Date(cve.published).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        : 'Unknown';
+
+      // Count how many product configurations are affected, as
+      // a rough "affected products" indicator — NVD's actual
+      // product list is often huge and deeply nested, so a count
+      // is more useful to display than trying to list them all.
+      const affectedCount = (cve.configurations || [])
+        .reduce((sum, config) => sum + (config.nodes || []).reduce((s, n) => s + (n.cpeMatch || []).length, 0), 0);
+
+      return `
+        <div class="cve-card">
+          <div class="cve-card-top">
+            <div class="cve-card-id">${this.escapeHtml(cve.id)}</div>
+            <span class="cve-severity-badge ${severity}">${severity === 'unknown' ? 'Unknown' : severity}${score !== 'N/A' ? ` · ${score}` : ''}</span>
+          </div>
+          <p class="cve-card-desc">${this.escapeHtml(description)}</p>
+          <div class="cve-card-meta">
+            <span><strong>Published:</strong> ${publishedDate}</span>
+            <span><strong>Affected configs:</strong> ${affectedCount > 0 ? affectedCount : 'N/A'}</span>
+          </div>
+          <a href="https://nvd.nist.gov/vuln/detail/${encodeURIComponent(cve.id)}" target="_blank" class="cve-card-nvd-link">🔗 Full NVD Record</a>
+        </div>
+      `;
+    }).join('');
+
+    this.resultArea.innerHTML = cardsHtml;
+  },
+
+  /**
+   * Basic HTML-escaping so that if NVD's description text ever
+   * contains characters like < or >, they display as plain text
+   * instead of accidentally being interpreted as HTML tags. Good
+   * defensive practice any time we insert external API text into
+   * the page with innerHTML.
+   */
+  escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+};
+
+App.cveTool.init();
 
 
 const roles = ['SOC Analyst (Aspiring)','Cybersecurity Analyst (Aspiring)','Network Specialist','TryHackMe SOC L1 ✓'];
