@@ -861,6 +861,86 @@ section:last-of-type { border-bottom: none; }
 .project-link:hover { border-color: var(--accent3); color: var(--accent); }
 .project-link.primary { background: var(--accent2); color: var(--accent); border-color: var(--accent3); }
 
+
+/* ───────────────────────────────────────────
+   CVE LOOKUP TOOL (#cve-tool)
+─────────────────────────────────────────── */
+#cve-tool { background: var(--bg2); }
+
+.cve-search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.cve-search-input {
+  flex: 1;
+  min-width: 240px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 11px 16px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: var(--sans);
+  transition: border-color var(--transition-base);
+}
+.cve-search-input:focus {
+  outline: none;
+  border-color: var(--accent3);
+}
+.cve-search-input::placeholder {
+  color: var(--dim);
+}
+
+.cve-examples {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+.cve-examples-label {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--dim);
+}
+.cve-example-chip {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+.cve-example-chip:hover {
+  border-color: var(--accent3);
+  color: var(--accent);
+  background: var(--accent2);
+}
+
+.cve-result-area {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cve-idle-state {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13.5px;
+  padding: 30px 20px;
+}
+.cve-idle-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: .6;
+}
+
+
 /* ───────────────────────────────────────────
    WRITINGS (#writings)
 ─────────────────────────────────────────── */
@@ -1740,6 +1820,51 @@ footer {
 </section>
 
 
+<!-- ══════════════════════════════
+     CVE LOOKUP TOOL
+══════════════════════════════ -->
+<section id="cve-tool">
+  <div class="wrap">
+    <div class="sec-eyebrow">// live security tool</div>
+    <h2 class="sec-title">CVE Lookup</h2>
+    <p class="sec-sub">
+      Live vulnerability lookup powered by the National Vulnerability Database (NVD) —
+      the same public CVE data source integrated into my Vulnerability Scanner project above.
+    </p>
+
+    <!-- Search bar -->
+    <div class="cve-search-row">
+      <input
+        type="text"
+        id="cve-search-input"
+        class="cve-search-input"
+        placeholder="Search a CVE ID (e.g. CVE-2021-44228) or keyword..."
+        autocomplete="off"
+      />
+      <button id="cve-search-btn" class="btn btn-primary">🔍 Search</button>
+    </div>
+
+    <!-- Quick-click example CVEs -->
+    <div class="cve-examples">
+      <span class="cve-examples-label">Try:</span>
+      <button class="cve-example-chip" data-cve="CVE-2021-44228">Log4Shell</button>
+      <button class="cve-example-chip" data-cve="CVE-2017-0144">EternalBlue</button>
+      <button class="cve-example-chip" data-cve="CVE-2023-44487">HTTP/2 Rapid Reset</button>
+    </div>
+
+    <!-- Result / idle / loading / error states all live here.
+         JS swaps what's inside this container based on what's
+         happening — nothing is live yet in this pass, so it
+         just shows the idle message. -->
+    <div id="cve-result-area" class="cve-result-area">
+      <div class="cve-idle-state">
+        <div class="cve-idle-icon">🛰️</div>
+        <p>Search a CVE above, or try one of the examples ↑</p>
+      </div>
+    </div>
+
+  </div>
+</section>
 
 <!-- ══════════════════════════════
      CERTIFICATIONS
@@ -3101,7 +3226,7 @@ document.querySelectorAll('.nav-dropdown-item').forEach(item => {
 // overwriting "current" with whichever section it's scrolled
 // past — so if this list doesn't match the real page order,
 // the nav will highlight the wrong tab while scrolling.
-const allSections = ['home','experience','projects','certifications','training','skills','tools','education','writings','resume','contact'];
+const allSections = ['home','experience','projects','cve-tool','certifications','training','skills','tools','education','writings','resume','contact'];
 const tabs = document.querySelectorAll('.nav-tab');
 
 function updateActiveTab(){
