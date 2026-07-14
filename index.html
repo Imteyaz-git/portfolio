@@ -1170,6 +1170,96 @@ section:last-of-type { border-bottom: none; }
   color: var(--accent);
 }
 
+/* ───────────────────────────────────────────
+   TRIAGE SIMULATOR (#triage-sim)
+─────────────────────────────────────────── */
+.triage-score-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+#triage-score-text {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+}
+.btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.btn:disabled:hover {
+  transform: none;
+  border-color: var(--border2);
+  color: var(--muted);
+}
+
+.triage-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.triage-tab {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+.triage-tab:hover {
+  border-color: var(--accent3);
+  color: var(--accent);
+}
+.triage-tab.active {
+  background: var(--accent2);
+  border-color: var(--accent3);
+  color: var(--accent);
+}
+/* Small checkmark shown on tabs already answered */
+.triage-tab.answered::after {
+  content: '✓';
+  margin-left: 6px;
+  color: var(--green);
+}
+
+.triage-scenario-area {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px;
+}
+.triage-log-header {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.triage-log-box {
+  background: #0a0f18;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 18px 20px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.9;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
 
 /* ───────────────────────────────────────────
    WRITINGS (#writings)
@@ -1793,7 +1883,7 @@ footer {
 
     <div class="hero-stats">
       <div class="hero-stat"><div class="hero-stat-num">8</div><div class="hero-stat-label">Certifications</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">Since Nov '25</div><div class="hero-stat-label">Gov Network Ops</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">Since Dec '25</div><div class="hero-stat-label">Gov Network Ops</div></div>
       <div class="hero-stat"><div class="hero-stat-num">4</div><div class="hero-stat-label">Security Projects</div></div>
       <div class="hero-stat"><div class="hero-stat-num">SOC L1</div><div class="hero-stat-label">TryHackMe Path</div></div>
     </div>
@@ -1849,7 +1939,7 @@ footer {
           <span class="status-badge status-current">Current Role</span>
         </div>
       </div>
-      <div class="exp-period">Nov 2025 – Present · 6+ months</div>
+      <div class="exp-period">Since Dec '25</div>
       <p class="exp-desc">
         On-site at one of Saudi Arabia's most security-sensitive environments — a <strong>Ministry of Interior</strong> government facility.
         Responsible for maintaining the full enterprise network infrastructure, from physical cabling to Cisco switch configuration.
@@ -2103,6 +2193,40 @@ footer {
 
   </div>
 </section>
+
+
+<!-- ══════════════════════════════
+     SOC ALERT TRIAGE SIMULATOR
+══════════════════════════════ -->
+<section id="triage-sim">
+  <div class="wrap">
+    <div class="sec-eyebrow">// interactive assessment</div>
+    <h2 class="sec-title">SOC Alert Triage Simulator</h2>
+    <p class="sec-sub">
+      5 realistic security alerts. For each one: is it a real threat or a false alarm?
+      How severe is it? What's the right response? Answer any or all, in any order.
+    </p>
+
+    <!-- Live score counter — always visible, updates as scenarios are answered -->
+    <div class="triage-score-bar">
+      <span id="triage-score-text">Score: 0/0 answered</span>
+      <button id="triage-result-btn" class="btn btn-ghost" disabled>See My Result</button>
+    </div>
+
+    <!-- Scenario tabs — JS fills these in, in a randomized order
+         each page load. Labeled generically (Alert 1-5) so the
+         order doesn't hint at difficulty or scenario type. -->
+    <div class="triage-tabs" id="triage-tabs"></div>
+
+    <!-- Whichever scenario is selected renders here -->
+    <div class="triage-scenario-area" id="triage-scenario-area"></div>
+
+    <!-- Final result screen — hidden until "See My Result" is clicked -->
+    <div class="triage-result-area" id="triage-result-area" style="display:none;"></div>
+
+  </div>
+</section>
+
 
 <!-- ══════════════════════════════
      CERTIFICATIONS
@@ -3602,6 +3726,163 @@ App.cveTool = {
 
 App.cveTool.init();
 
+
+/* ------------------------------------------------------------
+   SOC ALERT TRIAGE SIMULATOR
+   5 realistic alert scenarios. This pass (4A) only builds the
+   tabs + log display — answering logic comes in 4B.
+   ------------------------------------------------------------ */
+App.triageSimulator = {
+
+  // The 5 scenarios. Each one's actual answer/explanation fields
+  // are already here (built ahead of time) even though 4A doesn't
+  // use them yet — saves us from restructuring this data again
+  // in 4B/4C.
+  scenarios: [
+    {
+      id: 1,
+      logHeader: "Alert Details",
+      log: `[2026-01-14 03:12:07] Source: 185.220.101.45 → Destination: 10.0.0.15 (AUTH-SRV-01)
+Event: Failed Authentication (SSH)
+Log: sshd[2291]: Failed password for admin from 185.220.101.45 port 51022 ssh2
+     (repeated 47 times in 3 minutes, same source, same target account)`,
+      correctClassification: "true-positive",
+      correctSeverity: "high",
+      correctAction: "block-ip",
+      explanation: "47 failed logins in 3 minutes against the same account is classic automated brute-forcing, not a user mistyping a password. The source IP is a known Tor exit node range. Blocking the IP and forcing a password reset on the targeted account is the standard response."
+    },
+    {
+      id: 2,
+      logHeader: "Alert Details",
+      log: `[2026-01-14 14:33:52] Source: 10.0.4.22 (WORKSTATION-091) → Destination: 91.219.237.14:443
+Event: Outbound Connection
+Log: Regular 60-second interval connections to 91.219.237.14, TLS handshake with
+     self-signed certificate, no matching DNS lookup preceding connection`,
+      correctClassification: "true-positive",
+      correctSeverity: "critical",
+      correctAction: "escalate",
+      explanation: "Regular beacon intervals + a self-signed cert + no DNS resolution beforehand (meaning the IP was hardcoded, not looked up) are classic C2 indicators. This needs immediate escalation and endpoint isolation, not just monitoring."
+    },
+    {
+      id: 3,
+      logHeader: "Alert Details",
+      log: `[2026-01-14 03:47:19] Source: 10.0.2.8 (FILE-SRV-02) → Destination: 52.95.110.1 (AWS S3 - known range)
+Event: Large Outbound Transfer
+Log: 4.2 GB transferred via HTTPS by service account "svc-backup", matches recurring
+     nightly schedule (Change Ticket CHG-1123), destination is company's registered
+     cloud backup provider`,
+      correctClassification: "false-positive",
+      correctSeverity: "low",
+      correctAction: "close",
+      explanation: "Looks alarming at first glance (off-hours, large volume) — but it's a service account, not a user, transferring to a known/allowlisted cloud backup provider, matching a documented recurring schedule with a valid change ticket. Verify context before escalating on volume/timing alone."
+    },
+    {
+      id: 4,
+      logHeader: "Alert Details",
+      log: `[2026-01-14 09:15:41] Host: WORKSTATION-034 → User: j.martinez
+Event: Process Execution
+Log: powershell.exe -nop -w hidden -encodedcommand JABzAD0ATgBlAHcALQBPAGIA...
+     Parent process: WINWORD.EXE`,
+      correctClassification: "true-positive",
+      correctSeverity: "high",
+      correctAction: "escalate",
+      explanation: "Hidden-window, base64-encoded PowerShell spawned from Word is a textbook macro-malware pattern (Word document → PowerShell dropper). Escalate for endpoint forensics, not just monitoring."
+    },
+    {
+      id: 5,
+      logHeader: "Alert Details",
+      log: `[2026-01-14 11:02:15] User: s.chen → Login 1: Riyadh, Saudi Arabia (IP: 5.15.20.11) — MFA approved
+[2026-01-14 11:04:38] User: s.chen → Login 2: São Paulo, Brazil (IP: 191.7.44.203) — MFA approved
+Event: Concurrent Session — Same Account, Different Countries
+Note: User submitted travel notification to IT 3 days prior; both sessions passed
+      MFA from the user's registered device`,
+      correctClassification: "false-positive",
+      correctSeverity: "low",
+      correctAction: "close",
+      explanation: "Both logins passed MFA from a trusted, registered device — the account itself isn't compromised. The 'different countries' discrepancy is a known false-positive pattern caused by VPN providers routing through global exit nodes. Pre-notified travel confirms it. MFA approval + prior notification should make you dig deeper before escalating on geo-IP alone."
+    }
+  ],
+
+  shuffledScenarios: [], // filled in by shuffle() on init
+  activeScenarioId: null,
+
+  tabsEl: null,
+  scenarioAreaEl: null,
+
+  init() {
+    this.tabsEl = document.getElementById('triage-tabs');
+    this.scenarioAreaEl = document.getElementById('triage-scenario-area');
+    if (!this.tabsEl || !this.scenarioAreaEl) return;
+
+    this.shuffledScenarios = this.shuffle([...this.scenarios]);
+    this.renderTabs();
+
+    // Show the first scenario (in shuffled order) by default
+    this.selectScenario(this.shuffledScenarios[0].id);
+  },
+
+  /**
+   * Fisher-Yates shuffle — a standard, unbiased way to randomly
+   * reorder an array. Runs once per page load, so the scenario
+   * order is different every time you refresh.
+   */
+  shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  },
+
+  /**
+   * Builds the tab buttons in shuffled order. Labeled generically
+   * ("Alert 1" through "Alert 5" based on POSITION, not the
+   * scenario's real id) so the label never hints at content.
+   */
+  renderTabs() {
+    this.tabsEl.innerHTML = this.shuffledScenarios.map((scenario, index) => `
+      <button class="triage-tab" data-scenario-id="${scenario.id}">
+        Alert ${index + 1}
+      </button>
+    `).join('');
+
+    this.tabsEl.querySelectorAll('.triage-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        this.selectScenario(parseInt(tab.dataset.scenarioId));
+      });
+    });
+  },
+
+  /**
+   * Displays one scenario's log in the scenario area, and marks
+   * the matching tab as active.
+   */
+  selectScenario(scenarioId) {
+    this.activeScenarioId = scenarioId;
+    const scenario = this.scenarios.find(s => s.id === scenarioId);
+    if (!scenario) return;
+
+    // Update active tab styling
+    this.tabsEl.querySelectorAll('.triage-tab').forEach(tab => {
+      tab.classList.toggle('active', parseInt(tab.dataset.scenarioId) === scenarioId);
+    });
+
+    // Render the log — answering UI comes in 4B, this is just
+    // the log display for now
+    this.scenarioAreaEl.innerHTML = `
+      <div class="triage-log-header">${this.escapeHtml(scenario.logHeader)}</div>
+      <div class="triage-log-box">${this.escapeHtml(scenario.log)}</div>
+    `;
+  },
+
+  escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+};
+
+App.triageSimulator.init();
 
 const roles = ['SOC Analyst (Aspiring)','Cybersecurity Analyst (Aspiring)','Network Specialist','TryHackMe SOC L1 ✓'];
 let ri=0,ci=0,deleting=false;
