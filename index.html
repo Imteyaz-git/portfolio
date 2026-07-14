@@ -1200,6 +1200,27 @@ section:last-of-type { border-bottom: none; }
   color: var(--muted);
 }
 
+/* Once the "See My Result" button becomes clickable (at least
+   1 scenario answered), it pulses with a cyan glow to draw the
+   eye — same visual language as the hero terminal's glow border,
+   so it feels consistent rather than inventing a new effect. */
+.btn-primary:not(:disabled).pulse-glow {
+  animation: resultBtnGlow 2s ease-in-out infinite;
+}
+@keyframes resultBtnGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(56,189,248,0);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(56,189,248,0.55);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary.pulse-glow {
+    animation: none;
+  }
+}
+
 .triage-tabs {
   display: flex;
   gap: 8px;
@@ -1353,6 +1374,92 @@ section:last-of-type { border-bottom: none; }
 }
 .triage-option-btn:disabled:not(.selected) {
   opacity: .35;
+}
+
+/* ── Result Screen ── */
+.triage-result-card {
+  border-radius: var(--radius);
+  padding: 32px;
+  border: 1px solid;
+  text-align: center;
+}
+.triage-result-card.tier-sharp    { background: var(--green2); border-color: rgba(34,197,94,.35); }
+.triage-result-card.tier-solid    { background: var(--accent2); border-color: var(--accent3); }
+.triage-result-card.tier-developing { background: var(--amber2); border-color: rgba(245,158,11,.35); }
+.triage-result-card.tier-growing  { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,.3); }
+
+.triage-tier-emoji {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+.triage-tier-name {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.triage-tier-sub {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 28px;
+}
+
+.triage-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+.triage-breakdown-item {
+  background: rgba(0,0,0,0.15);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.triage-breakdown-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 8px;
+}
+.triage-breakdown-pct {
+  font-size: 20px;
+  font-weight: 800;
+  font-family: var(--mono);
+  margin-bottom: 8px;
+}
+.triage-breakdown-track {
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.triage-breakdown-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: currentColor;
+  transition: width 0.7s ease;
+}
+
+.triage-takeaway {
+  background: rgba(0,0,0,0.15);
+  border-radius: 10px;
+  padding: 18px 20px;
+  text-align: left;
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+.triage-takeaway strong { color: var(--text); }
+
+.triage-result-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 
@@ -2305,7 +2412,7 @@ footer {
     <!-- Live score counter — always visible, updates as scenarios are answered -->
     <div class="triage-score-bar">
       <span id="triage-score-text">Score: 0/0 answered</span>
-      <button id="triage-result-btn" class="btn btn-ghost" disabled>See My Result</button>
+      <button id="triage-result-btn" class="btn btn-primary" disabled>See My Result</button>
     </div>
 
     <!-- Scenario tabs — JS fills these in, in a randomized order
@@ -3836,6 +3943,8 @@ App.triageSimulator = {
   scenarios: [
     {
       id: 1,
+      shortName: "the brute-force login attempt",
+      mistakeHint: "missing that the sheer volume of failed logins in 3 minutes was automated, not human",
       logHeader: "Alert Details",
       log: `[2026-01-14 03:12:07] Source: 185.220.101.45 → Destination: 10.0.0.15 (AUTH-SRV-01)
 Event: Failed Authentication (SSH)
@@ -3848,6 +3957,8 @@ Log: sshd[2291]: Failed password for admin from 185.220.101.45 port 51022 ssh2
     },
     {
       id: 2,
+      shortName: "the C2 beacon connection",
+      mistakeHint: "missing that the regular timing and self-signed cert pointed to command-and-control traffic",
       logHeader: "Alert Details",
       log: `[2026-01-14 14:33:52] Source: 10.0.4.22 (WORKSTATION-091) → Destination: 91.219.237.14:443
 Event: Outbound Connection
@@ -3860,6 +3971,8 @@ Log: Regular 60-second interval connections to 91.219.237.14, TLS handshake with
     },
     {
       id: 3,
+      shortName: "the 3am data transfer",
+      mistakeHint: "not verifying the service account and change ticket before escalating on volume/timing alone",
       logHeader: "Alert Details",
       log: `[2026-01-14 03:47:19] Source: 10.0.2.8 (FILE-SRV-02) → Destination: 52.95.110.1 (AWS S3 - known range)
 Event: Large Outbound Transfer
@@ -3873,6 +3986,8 @@ Log: 4.2 GB transferred via HTTPS by service account "svc-backup", matches recur
     },
     {
       id: 4,
+      shortName: "the encoded PowerShell execution",
+      mistakeHint: "missing the classic Word-to-PowerShell macro-malware pattern",
       logHeader: "Alert Details",
       log: `[2026-01-14 09:15:41] Host: WORKSTATION-034 → User: j.martinez
 Event: Process Execution
@@ -3885,6 +4000,8 @@ Log: powershell.exe -nop -w hidden -encodedcommand JABzAD0ATgBlAHcALQBPAGIA...
     },
     {
       id: 5,
+      shortName: "the impossible-travel login",
+      mistakeHint: "not weighing the MFA approval and pre-notified travel before escalating on geo-IP alone",
       logHeader: "Alert Details",
       log: `[2026-01-14 11:02:15] User: s.chen → Login 1: Riyadh, Saudi Arabia (IP: 5.15.20.11) — MFA approved
 [2026-01-14 11:04:38] User: s.chen → Login 2: São Paulo, Brazil (IP: 191.7.44.203) — MFA approved
@@ -3933,31 +4050,130 @@ Note: User submitted travel notification to IT 3 days prior; both sessions passe
   },
 
   /**
-   * Hides the tabs + scenario area, shows the result area instead.
-   * (4D will fill in resultAreaEl's actual content — this pass
-   * just handles the switch itself.)
+   * Hides the tabs + scenario area, shows the full result screen:
+   * tier badge, category breakdown, dynamic takeaway, reset option.
    */
   showResultView() {
     this.tabsEl.style.display = 'none';
     this.scenarioAreaEl.style.display = 'none';
     this.resultAreaEl.style.display = 'block';
 
-    // Placeholder content — replaced with real result logic in 4D
     const answers = App.state.triageAnswers || {};
-    const answeredCount = Object.keys(answers).length;
+    const answeredIds = Object.keys(answers).map(Number);
+    const answeredScenarios = answeredIds.map(id => ({
+      scenario: this.scenarios.find(s => s.id === id),
+      result: answers[id]
+    }));
+
+    const total = answeredScenarios.length;
+    const fullyCorrect = answeredScenarios.filter(a => a.result.allCorrect).length;
+    const overallPct = Math.round((fullyCorrect / total) * 100);
+
+    // Category accuracy — % correct within JUST that one field,
+    // across all answered scenarios (not just full-correct ones)
+    const classificationPct = Math.round((answeredScenarios.filter(a => a.result.correctClassification).length / total) * 100);
+    const severityPct = Math.round((answeredScenarios.filter(a => a.result.correctSeverity).length / total) * 100);
+    const actionPct = Math.round((answeredScenarios.filter(a => a.result.correctAction).length / total) * 100);
+
+    const tier = this.getTier(overallPct);
+
     this.resultAreaEl.innerHTML = `
-      <div class="triage-scenario-area">
-        <p style="color:var(--muted);">
-          [Placeholder] You answered ${answeredCount} scenario(s) so far.
-          Full result breakdown coming in the next pass.
-        </p>
-        <button class="btn btn-ghost" id="triage-back-btn" style="margin-top:16px;">← Back to Scenarios</button>
+      <div class="triage-result-card ${tier.cssClass}">
+        <div class="triage-tier-emoji">${tier.emoji}</div>
+        <div class="triage-tier-name">${tier.name}</div>
+        <div class="triage-tier-sub">${fullyCorrect}/${total} scenarios fully correct · ${overallPct}% accuracy</div>
+
+        <div class="triage-breakdown">
+          ${this.buildBreakdownItem('Classification', classificationPct)}
+          ${this.buildBreakdownItem('Severity', severityPct)}
+          ${this.buildBreakdownItem('Action', actionPct)}
+        </div>
+
+        <div class="triage-takeaway">💡 ${this.buildTakeaway(answeredScenarios)}</div>
+
+        <div class="triage-result-actions">
+          <button class="btn btn-ghost" id="triage-back-btn">← Back to Scenarios</button>
+          <button class="btn btn-primary" id="triage-reset-btn">🔄 Reset & Try Again</button>
+        </div>
       </div>
     `;
+
+    // Animate the breakdown bars filling in, same trick as the
+    // CVE severity bar — start at 0%, then set real width after
+    // the browser registers the starting point.
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.triage-breakdown-fill').forEach(bar => {
+        bar.style.width = bar.dataset.targetWidth + '%';
+      });
+    });
 
     document.getElementById('triage-back-btn').addEventListener('click', () => {
       this.showScenarioView();
     });
+    document.getElementById('triage-reset-btn').addEventListener('click', () => {
+      this.resetAll();
+    });
+  },
+
+  /**
+   * Returns the tier info (name, emoji, CSS class) for a given
+   * overall accuracy percentage.
+   */
+  getTier(pct) {
+    if (pct === 100) return { name: 'Sharp Eye', emoji: '🎯', cssClass: 'tier-sharp' };
+    if (pct >= 75)   return { name: 'Solid Instincts', emoji: '👍', cssClass: 'tier-solid' };
+    if (pct >= 50)   return { name: 'Developing Judgment', emoji: '📈', cssClass: 'tier-developing' };
+    return { name: 'Room to Grow', emoji: '🌱', cssClass: 'tier-growing' };
+  },
+
+  buildBreakdownItem(label, pct) {
+    return `
+      <div class="triage-breakdown-item">
+        <div class="triage-breakdown-label">${label}</div>
+        <div class="triage-breakdown-pct">${pct}%</div>
+        <div class="triage-breakdown-track">
+          <div class="triage-breakdown-fill" data-target-width="${pct}" style="width:0%;"></div>
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * Builds a one-line, specific takeaway sentence referencing
+   * which scenarios were nailed vs missed, using each scenario's
+   * shortName + mistakeHint fields.
+   */
+  buildTakeaway(answeredScenarios) {
+    const correctOnes = answeredScenarios.filter(a => a.result.allCorrect).map(a => a.scenario.shortName);
+    const missedOnes = answeredScenarios.filter(a => !a.result.allCorrect);
+
+    if (missedOnes.length === 0) {
+      return `You nailed <strong>every scenario</strong> you attempted — sharp, accurate triage judgment across the board.`;
+    }
+
+    if (correctOnes.length === 0) {
+      // Everything missed — reference the first missed one's hint specifically
+      const firstHint = missedOnes[0].scenario.mistakeHint;
+      return `Every scenario you attempted had at least one wrong call — for example, ${this.escapeHtml(firstHint)}. Real SOC judgment comes from pattern recognition built over many alerts like these — worth revisiting the explanations above.`;
+    }
+
+    // Mixed bag — reference one correct, one missed
+    const correctExample = correctOnes[0];
+    const missedExample = missedOnes[0];
+    return `You correctly handled <strong>${this.escapeHtml(correctExample)}</strong>, but ${this.escapeHtml(missedExample.scenario.mistakeHint)} on <strong>${this.escapeHtml(missedExample.scenario.shortName)}</strong>. Real SOC work often means digging one layer deeper before deciding.`;
+  },
+
+  /**
+   * Fully resets the simulator — clears all stored answers,
+   * re-shuffles scenario order, and returns to the first scenario.
+   */
+  resetAll() {
+    App.state.triageAnswers = {};
+    this.shuffledScenarios = this.shuffle([...this.scenarios]);
+    this.renderTabs();
+    this.showScenarioView();
+    this.selectScenario(this.shuffledScenarios[0].id);
+    this.updateScoreBar();
   },
 
   /**
@@ -4187,7 +4403,13 @@ Note: User submitted travel notification to IT 3 days prior; both sessions passe
     const scoreText = document.getElementById('triage-score-text');
     const resultBtn = document.getElementById('triage-result-btn');
     if (scoreText) scoreText.textContent = `Score: ${fullyCorrectCount}/${answeredIds.length} answered correctly`;
-    if (resultBtn) resultBtn.disabled = answeredIds.length === 0;
+    if (resultBtn) {
+      resultBtn.disabled = answeredIds.length === 0;
+      // Add the glow class only once it's actually clickable —
+      // toggle, not just add, so it correctly turns off again
+      // after a reset (when it goes back to 0 answered).
+      resultBtn.classList.toggle('pulse-glow', answeredIds.length > 0);
+    }
   },
 
   escapeHtml(str) {
