@@ -1260,6 +1260,101 @@ section:last-of-type { border-bottom: none; }
   overflow-x: auto;
 }
 
+.triage-answer-section {
+  margin-top: 24px;
+}
+.triage-question-group {
+  margin-bottom: 20px;
+}
+.triage-question-label {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 10px;
+}
+.triage-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.triage-option-btn {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+.triage-option-btn:hover {
+  border-color: var(--accent3);
+  color: var(--accent);
+}
+.triage-option-btn.selected {
+  background: var(--accent2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.triage-submit-row {
+  margin-top: 20px;
+}
+
+/* ── Reveal state ── */
+.triage-reveal {
+  margin-top: 22px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  border: 1px solid;
+}
+.triage-reveal.all-correct {
+  background: var(--green2);
+  border-color: rgba(34,197,94,.3);
+}
+.triage-reveal.partial-correct {
+  background: var(--amber2);
+  border-color: rgba(245,158,11,.3);
+}
+.triage-reveal.all-wrong {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.3);
+}
+.triage-reveal-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.triage-reveal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  margin-bottom: 6px;
+  color: var(--muted);
+}
+.triage-reveal-row .icon-correct { color: var(--green); }
+.triage-reveal-row .icon-wrong { color: #ef4444; }
+.triage-reveal-explanation {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Options become non-clickable once answered — visually
+   dimmed except the ones you actually picked */
+.triage-option-btn:disabled {
+  cursor: not-allowed;
+}
+.triage-option-btn:disabled:not(.selected) {
+  opacity: .35;
+}
+
 
 /* ───────────────────────────────────────────
    WRITINGS (#writings)
@@ -3806,6 +3901,11 @@ Note: User submitted travel notification to IT 3 days prior; both sessions passe
   shuffledScenarios: [], // filled in by shuffle() on init
   activeScenarioId: null,
 
+  // Tracks the user's current in-progress picks for whichever
+  // scenario is open right now (resets each time you switch
+  // scenarios, unless that scenario was already answered).
+  currentPicks: { classification: null, severity: null, action: null },
+
   tabsEl: null,
   scenarioAreaEl: null,
 
@@ -3867,12 +3967,178 @@ Note: User submitted travel notification to IT 3 days prior; both sessions passe
       tab.classList.toggle('active', parseInt(tab.dataset.scenarioId) === scenarioId);
     });
 
-    // Render the log — answering UI comes in 4B, this is just
-    // the log display for now
+    // Reset picks when switching to a new scenario
+    this.currentPicks = { classification: null, severity: null, action: null };
+
+    const alreadyAnswered = App.state.triageAnswers && App.state.triageAnswers[scenarioId];
+
     this.scenarioAreaEl.innerHTML = `
       <div class="triage-log-header">${this.escapeHtml(scenario.logHeader)}</div>
       <div class="triage-log-box">${this.escapeHtml(scenario.log)}</div>
+      <div class="triage-answer-section" id="triage-answer-section"></div>
     `;
+
+    if (alreadyAnswered) {
+      this.renderReveal(scenario, alreadyAnswered);
+    } else {
+      this.renderQuestions(scenario);
+    }
+  },
+
+  /**
+   * Renders the 3 answer option groups + submit button for a
+   * scenario that hasn't been answered yet.
+   */
+  renderQuestions(scenario) {
+    const answerSection = document.getElementById('triage-answer-section');
+
+    const classificationOptions = [
+      { value: 'true-positive', label: 'True Positive' },
+      { value: 'false-positive', label: 'False Positive' }
+    ];
+    const severityOptions = [
+      { value: 'critical', label: 'Critical' },
+      { value: 'high', label: 'High' },
+      { value: 'medium', label: 'Medium' },
+      { value: 'low', label: 'Low' }
+    ];
+    const actionOptions = [
+      { value: 'escalate', label: 'Escalate' },
+      { value: 'block-ip', label: 'Block IP' },
+      { value: 'monitor', label: 'Monitor' },
+      { value: 'close', label: 'Close' }
+    ];
+
+    answerSection.innerHTML = `
+      ${this.buildQuestionGroup('Classification', 'classification', classificationOptions)}
+      ${this.buildQuestionGroup('Severity', 'severity', severityOptions)}
+      ${this.buildQuestionGroup('Recommended Action', 'action', actionOptions)}
+      <div class="triage-submit-row">
+        <button class="btn btn-primary" id="triage-submit-btn" disabled>Submit Answer</button>
+      </div>
+    `;
+
+    // Wire up option button clicks
+    answerSection.querySelectorAll('.triage-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const group = btn.dataset.group;
+        const value = btn.dataset.value;
+
+        // Update the pick
+        this.currentPicks[group] = value;
+
+        // Update visual selected state within this group only
+        answerSection.querySelectorAll(`.triage-option-btn[data-group="${group}"]`).forEach(b => {
+          b.classList.toggle('selected', b.dataset.value === value);
+        });
+
+        // Enable Submit only once all 3 groups have a pick
+        const submitBtn = document.getElementById('triage-submit-btn');
+        const allPicked = this.currentPicks.classification && this.currentPicks.severity && this.currentPicks.action;
+        submitBtn.disabled = !allPicked;
+      });
+    });
+
+    // Submit button
+    document.getElementById('triage-submit-btn').addEventListener('click', () => {
+      this.submitAnswer(scenario);
+    });
+  },
+
+  buildQuestionGroup(label, groupKey, options) {
+    const optionsHtml = options.map(opt =>
+      `<button class="triage-option-btn" data-group="${groupKey}" data-value="${opt.value}">${opt.label}</button>`
+    ).join('');
+
+    return `
+      <div class="triage-question-group">
+        <div class="triage-question-label">${label}</div>
+        <div class="triage-options">${optionsHtml}</div>
+      </div>
+    `;
+  },
+
+  /**
+   * Called when Submit is clicked. Checks the picks against the
+   * scenario's correct answers, stores the result, updates the
+   * score bar, and shows the reveal.
+   */
+  submitAnswer(scenario) {
+    const correctClassification = this.currentPicks.classification === scenario.correctClassification;
+    const correctSeverity = this.currentPicks.severity === scenario.correctSeverity;
+    const correctAction = this.currentPicks.action === scenario.correctAction;
+
+    const result = {
+      picks: { ...this.currentPicks },
+      correctClassification,
+      correctSeverity,
+      correctAction,
+      allCorrect: correctClassification && correctSeverity && correctAction
+    };
+
+    // Store this answer permanently (until page refresh) so
+    // switching tabs and coming back still shows the reveal,
+    // not the questions again.
+    App.state.triageAnswers = App.state.triageAnswers || {};
+    App.state.triageAnswers[scenario.id] = result;
+
+    // Mark this scenario's tab with a checkmark
+    const tab = this.tabsEl.querySelector(`.triage-tab[data-scenario-id="${scenario.id}"]`);
+    if (tab) tab.classList.add('answered');
+
+    this.renderReveal(scenario, result);
+    this.updateScoreBar();
+  },
+
+  /**
+   * Shows the reveal: which parts were right/wrong, plus the
+   * scenario's explanation. Also used when revisiting an
+   * already-answered scenario.
+   */
+  renderReveal(scenario, result) {
+    const answerSection = document.getElementById('triage-answer-section');
+
+    const correctCount = [result.correctClassification, result.correctSeverity, result.correctAction].filter(Boolean).length;
+    const revealClass = correctCount === 3 ? 'all-correct' : correctCount === 0 ? 'all-wrong' : 'partial-correct';
+    const revealTitle = correctCount === 3 ? '✅ Fully Correct' : correctCount === 0 ? '❌ Not Quite' : '⚠️ Partially Correct';
+
+    const labelMap = {
+      classification: { 'true-positive': 'True Positive', 'false-positive': 'False Positive' },
+      severity: { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' },
+      action: { escalate: 'Escalate', 'block-ip': 'Block IP', monitor: 'Monitor', close: 'Close' }
+    };
+
+    const row = (label, isCorrect, yourPick, correctPick) => `
+      <div class="triage-reveal-row">
+        <span class="${isCorrect ? 'icon-correct' : 'icon-wrong'}">${isCorrect ? '✓' : '✗'}</span>
+        <span><strong>${label}:</strong> you said "${yourPick}"${!isCorrect ? ` — correct answer was "${correctPick}"` : ''}</span>
+      </div>
+    `;
+
+    answerSection.innerHTML = `
+      <div class="triage-reveal ${revealClass}">
+        <div class="triage-reveal-title">${revealTitle} (${correctCount}/3)</div>
+        ${row('Classification', result.correctClassification, labelMap.classification[result.picks.classification], labelMap.classification[scenario.correctClassification])}
+        ${row('Severity', result.correctSeverity, labelMap.severity[result.picks.severity], labelMap.severity[scenario.correctSeverity])}
+        ${row('Action', result.correctAction, labelMap.action[result.picks.action], labelMap.action[scenario.correctAction])}
+        <div class="triage-reveal-explanation">💡 ${this.escapeHtml(scenario.explanation)}</div>
+      </div>
+    `;
+  },
+
+  /**
+   * Updates the top score bar and enables the "See My Result"
+   * button once at least 1 scenario has been answered.
+   */
+  updateScoreBar() {
+    const answers = App.state.triageAnswers || {};
+    const answeredIds = Object.keys(answers);
+    const fullyCorrectCount = answeredIds.filter(id => answers[id].allCorrect).length;
+
+    const scoreText = document.getElementById('triage-score-text');
+    const resultBtn = document.getElementById('triage-result-btn');
+    if (scoreText) scoreText.textContent = `Score: ${fullyCorrectCount}/${answeredIds.length} answered correctly`;
+    if (resultBtn) resultBtn.disabled = answeredIds.length === 0;
   },
 
   escapeHtml(str) {
