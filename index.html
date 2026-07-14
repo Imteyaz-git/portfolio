@@ -3912,6 +3912,8 @@ Note: User submitted travel notification to IT 3 days prior; both sessions passe
   init() {
     this.tabsEl = document.getElementById('triage-tabs');
     this.scenarioAreaEl = document.getElementById('triage-scenario-area');
+    this.resultAreaEl = document.getElementById('triage-result-area');
+    this.resultBtn = document.getElementById('triage-result-btn');
     if (!this.tabsEl || !this.scenarioAreaEl) return;
 
     this.shuffledScenarios = this.shuffle([...this.scenarios]);
@@ -3919,6 +3921,53 @@ Note: User submitted travel notification to IT 3 days prior; both sessions passe
 
     // Show the first scenario (in shuffled order) by default
     this.selectScenario(this.shuffledScenarios[0].id);
+
+    // "See My Result" button — switches from the scenario view
+    // to the result view. Full result content built in 4D; for
+    // now this just proves the view-switching works correctly.
+    if (this.resultBtn) {
+      this.resultBtn.addEventListener('click', () => {
+        this.showResultView();
+      });
+    }
+  },
+
+  /**
+   * Hides the tabs + scenario area, shows the result area instead.
+   * (4D will fill in resultAreaEl's actual content — this pass
+   * just handles the switch itself.)
+   */
+  showResultView() {
+    this.tabsEl.style.display = 'none';
+    this.scenarioAreaEl.style.display = 'none';
+    this.resultAreaEl.style.display = 'block';
+
+    // Placeholder content — replaced with real result logic in 4D
+    const answers = App.state.triageAnswers || {};
+    const answeredCount = Object.keys(answers).length;
+    this.resultAreaEl.innerHTML = `
+      <div class="triage-scenario-area">
+        <p style="color:var(--muted);">
+          [Placeholder] You answered ${answeredCount} scenario(s) so far.
+          Full result breakdown coming in the next pass.
+        </p>
+        <button class="btn btn-ghost" id="triage-back-btn" style="margin-top:16px;">← Back to Scenarios</button>
+      </div>
+    `;
+
+    document.getElementById('triage-back-btn').addEventListener('click', () => {
+      this.showScenarioView();
+    });
+  },
+
+  /**
+   * Reverses showResultView() — brings back the tabs and
+   * scenario area, hides the result screen.
+   */
+  showScenarioView() {
+    this.tabsEl.style.display = 'flex';
+    this.scenarioAreaEl.style.display = 'block';
+    this.resultAreaEl.style.display = 'none';
   },
 
   /**
