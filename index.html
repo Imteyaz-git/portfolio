@@ -775,9 +775,51 @@ section:last-of-type { border-bottom: none; }
 /* The live prompt line shown after boot finishes — styled
    slightly dimmer than the boot lines since it's just an idle
    "waiting" state, not an active message */
+/* ── Terminal alert line — clickable, pulses to draw attention ── */
 .terminal-live-prompt {
   color: var(--muted);
   margin-top: 4px;
+}
+.terminal-alert-line {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: alertPulse 2s ease-in-out infinite;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.terminal-alert-line:hover {
+  background: rgba(239,68,68,0.16);
+  border-color: rgba(239,68,68,0.5);
+}
+.terminal-alert-line .alert-arrow {
+  margin-left: auto;
+  font-size: 14px;
+  transition: transform var(--transition-fast);
+}
+.terminal-alert-line:hover .alert-arrow {
+  transform: translateX(3px);
+}
+@keyframes alertPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(239,68,68,0);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(239,68,68,0.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .terminal-alert-line {
+    animation: none;
+  }
 }
 
 /* Blinking cursor block that sits at the end of whichever line
@@ -3694,6 +3736,10 @@ App.bootTerminal = {
   // blinking cursor at an idle prompt, implying "the system is
   // ready and listening," which sets up the hidden terminal
   // easter egg feature we'll build in a later phase.
+  // Shown once after all boot lines finish — a permanently
+  // blinking cursor at an idle prompt, implying "the system is
+  // ready and listening." Shortly after, a live alert appears,
+  // inviting the visitor to click through to the Triage Simulator.
   showLivePrompt() {
     const lineEl = document.createElement('div');
     lineEl.className = 'terminal-line terminal-live-prompt';
@@ -3712,10 +3758,35 @@ App.bootTerminal = {
     lineEl.appendChild(cursorEl);
 
     this.bodyEl.appendChild(lineEl);
-  } 
 
-    
-   
+    // After a short pause (as if the "system" just picked up a
+    // new alert), show the clickable alert line. The delay makes
+    // it feel like it's actually arriving live, not just sitting
+    // there from the start.
+    setTimeout(() => this.showAlertLine(), 3200);
+  },
+
+  /**
+   * Renders a clickable, pulsing "new alert" line in the terminal
+   * that scrolls the visitor down to the Triage Simulator section
+   * when clicked — connecting the hero terminal to the interactive
+   * game further down the page.
+   */
+  showAlertLine() {
+    const alertEl = document.createElement('div');
+    alertEl.className = 'terminal-alert-line';
+    alertEl.innerHTML = `⚠ 1 new alert requires triage <span class="alert-arrow">→</span>`;
+
+    alertEl.addEventListener('click', () => {
+      const target = document.getElementById('triage-sim');
+      if (target) {
+        const y = target.getBoundingClientRect().top + window.pageYOffset - 62;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    });
+
+    this.bodyEl.appendChild(alertEl);
+  }
 };
 
 App.bootTerminal.init(); // kick off the boot sequence immediately
