@@ -1556,7 +1556,132 @@ section:last-of-type { border-bottom: none; }
   transition: all .2s;
 }
 .writing-link:hover { background: var(--accent); color: var(--bg); }
+/* ───────────────────────────────────────────
+   READING VIEW OVERLAY
+─────────────────────────────────────────── */
+.reading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5,8,13,0.92);
+  backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 40px 20px;
+}
+.reading-overlay.open {
+  display: flex;
+}
+.reading-overlay-inner {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  max-width: 760px;
+  width: 100%;
+  padding: 40px 48px 48px;
+  position: relative;
+  animation: readingFadeIn 0.3s ease;
+}
+@keyframes readingFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+.reading-close-btn {
+  position: sticky;
+  top: 0;
+  float: right;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  margin-bottom: 20px;
+}
+.reading-close-btn:hover {
+  border-color: var(--accent3);
+  color: var(--accent);
+}
 
+.reading-content h1 {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  clear: both;
+}
+.reading-content .reading-subtitle {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin-bottom: 28px;
+  font-family: var(--mono);
+}
+.reading-content h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 30px;
+  margin-bottom: 12px;
+}
+.reading-content p {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.8;
+  margin-bottom: 14px;
+}
+.reading-content ul {
+  margin: 0 0 14px 20px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.reading-content .reading-diagram {
+  background: #0a0f18;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 18px 20px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--accent);
+  white-space: pre-wrap;
+  overflow-x: auto;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.reading-content .reading-challenge {
+  background: var(--card);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+}
+.reading-content .reading-challenge strong {
+  color: var(--accent);
+}
+.reading-pdf-link {
+  display: inline-block;
+  margin-top: 24px;
+  padding: 10px 20px;
+  background: var(--accent2);
+  border: 1px solid var(--accent3);
+  border-radius: 8px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+}
+.reading-pdf-link:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+@media (max-width: 700px) {
+  .reading-overlay-inner {
+    padding: 28px 22px 32px;
+  }
+}
 /* ───────────────────────────────────────────
    EXPERIENCE — CARD GRID (non-timeline)
 ─────────────────────────────────────────── */
@@ -3085,34 +3210,7 @@ footer {
 
     <div class="writings-list">
 
-      <!-- 1. IDS/IPS Guide -->
-      <div class="writing-card glow-hover">
-        <div class="writing-date-col">
-          <div class="writing-month">2025</div>
-          <div class="writing-year">Guide</div>
-        </div>
-        <div class="writing-body">
-          <div class="writing-tag-row">
-            <span class="writing-tag blog">Guide</span>
-            <span class="writing-read-time">☕ 25 min read</span>
-          </div>
-          <div class="writing-title">Comprehensive Guide to IDS/IPS Technologies</div>
-          <p class="writing-excerpt">
-            Deep dive into Intrusion Detection and Prevention Systems — types (NIDS, HIDS, Wireless, Cloud-based),
-            detection methodologies (signature, anomaly, behavioral), popular tools including Snort, Suricata, Zeek,
-            and Cisco Firepower, plus real-world deployment best practices across healthcare, finance, and manufacturing.
-          </p>
-          <div class="writing-footer">
-            <div class="chips">
-              <span class="chip accent">IDS/IPS</span>
-              <span class="chip">Suricata</span>
-              <span class="chip">Snort</span>
-              <span class="chip">Threat Detection</span>
-            </div>
-            <a href="writings/Detection and Prevention Technologies.pdf" target="_blank" class="writing-link">Read →</a>
-          </div>
-        </div>
-      </div>
+      
 
       <!-- 2. Real-Time Threat Detection Report -->
       <div class="writing-card glow-hover">
@@ -3138,7 +3236,7 @@ footer {
               <span class="chip">Kibana</span>
               <span class="chip">Logstash</span>
             </div>
-            <a href="writings/Real-Time Network Threat Detection.pdf" target="_blank" class="writing-link">Read →</a>
+            <a href="writings/Real-Time Network Threat Detection.pdf" target="_blank" class="writing-link" data-read-article="threat-detection">Read →</a>
           </div>
         </div>
       </div>
@@ -3167,11 +3265,38 @@ footer {
               <span class="chip">NVD API</span>
               <span class="chip">CVSS</span>
             </div>
-            <a href="writings/Automated Network Security Assessment Tool.pdf" target="_blank" class="writing-link">Read →</a>
+            <a href="writings/Automated Network Security Assessment Tool.pdf" target="_blank" class="writing-link" data-read-article="vuln-scanner">Read →</a>
           </div>
         </div>
       </div>
-
+<!-- 1. IDS/IPS Guide -->
+      <div class="writing-card glow-hover">
+        <div class="writing-date-col">
+          <div class="writing-month">2025</div>
+          <div class="writing-year">Guide</div>
+        </div>
+        <div class="writing-body">
+          <div class="writing-tag-row">
+            <span class="writing-tag blog">Guide</span>
+            <span class="writing-read-time">☕ 25 min read</span>
+          </div>
+          <div class="writing-title">Comprehensive Guide to IDS/IPS Technologies</div>
+          <p class="writing-excerpt">
+            Deep dive into Intrusion Detection and Prevention Systems — types (NIDS, HIDS, Wireless, Cloud-based),
+            detection methodologies (signature, anomaly, behavioral), popular tools including Snort, Suricata, Zeek,
+            and Cisco Firepower, plus real-world deployment best practices across healthcare, finance, and manufacturing.
+          </p>
+          <div class="writing-footer">
+            <div class="chips">
+              <span class="chip accent">IDS/IPS</span>
+              <span class="chip">Suricata</span>
+              <span class="chip">Snort</span>
+              <span class="chip">Threat Detection</span>
+            </div>
+            <a href="writings/Detection and Prevention Technologies.pdf" target="_blank" class="writing-link">Read →</a>
+          </div>
+        </div>
+      </div>
       <!-- 4. Brute-Force Attacks Guide -->
       <div class="writing-card glow-hover">
         <div class="writing-date-col">
@@ -3513,7 +3638,16 @@ footer {
 <footer>
   © 2025 Imteyaz Ali · Riyadh, Saudi Arabia · Built with focus & caffeine
 </footer>
+<!-- Reading View Overlay — reused for both project report articles.
+     Hidden by default; JS shows/hides it and fills in the content. -->
+<div id="reading-overlay" class="reading-overlay">
+  <div class="reading-overlay-inner">
+    <button id="reading-close-btn" class="reading-close-btn">✕ Close</button>
+    <div id="reading-content" class="reading-content"></div>
+  </div>
+</div>
 
+<button id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
 <button id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
 
 <!-- ══════════════════════════════
@@ -4717,6 +4851,133 @@ revealEls.forEach(el => revealObs.observe(el));
   }, { passive: true }); // passive: true tells the browser this listener
                           // won't block scrolling, which keeps scrolling smooth
 })();
+
+/* ------------------------------------------------------------
+   WRITINGS READER
+   Powers the inline reading view for the 2 project report
+   writings. Content is condensed from the full PDF reports —
+   see each article's pdfLink for the complete technical version.
+   ------------------------------------------------------------ */
+App.writingsReader = {
+
+  articles: {
+    'vuln-scanner': {
+      title: "Automated Network Security Assessment Tool",
+      subtitle: "Project Report · 4 min read (inline) · Full PDF ~18 min",
+      pdfLink: "writings/Automated Network Security Assessment Tool.pdf",
+      sections: [
+        { type: 'p', text: "Manual vulnerability assessments are slow and error-prone — and with global cybercrime costs projected to keep climbing, delayed detection is a real risk, not just an inconvenience. This tool automates the full workflow: scan a network, cross-reference real vulnerability data, prioritize by severity, and report the results — without a human manually checking each port and service by hand." },
+        { type: 'h2', text: "What It Does" },
+        { type: 'ul', items: [
+          "Scans networks with Nmap (quick, SYN, and UDP scan types) to find open ports and running services",
+          "Queries the National Vulnerability Database (NVD) for real-time CVE data — with a local fallback database if NVD is unreachable",
+          "Classifies each vulnerability by CVSS score into Critical / High / Medium / Low, surfacing the top 5 most critical per service",
+          "Generates a graphical severity breakdown (via Matplotlib) and a text report",
+          "Sends results automatically via email to stakeholders"
+        ]},
+        { type: 'h2', text: "Real Test Results" },
+        { type: 'p', text: "Run against a Metasploitable VM, the scanner correctly identified a critical vsftpd 2.3.4 backdoor (CVE-2011-2523, CVSS 9.8) and a high-severity Apache DoS vulnerability (CVE-2011-3368, CVSS 7.5) — exactly the kind of findings a real assessment should catch." },
+        { type: 'h2', text: "Key Challenges Solved" },
+        { type: 'challenge', title: "Missing NVD Data", text: "Built a local fallback vulnerability database so the tool still works if NVD is unreachable." },
+        { type: 'challenge', title: "Sending Automated Email Securely", text: "Gmail blocks direct script logins by default — solved using Gmail App Passwords instead of plaintext credentials." },
+        { type: 'challenge', title: "Clear Visual Reporting", text: "Used Matplotlib to turn raw severity counts into an actual bar chart, not just a wall of text." },
+        { type: 'h2', text: "Planned Next Steps" },
+        { type: 'p', text: "Web interface, multi-target scanning, Slack/Teams integration, and a real-time monitoring dashboard." }
+      ]
+    },
+
+    'threat-detection': {
+      title: "Real-Time Network Threat Detection with Suricata & Elastic SIEM",
+      subtitle: "Project Report · 5 min read (inline) · Full PDF ~25 min",
+      pdfLink: "writings/Real-Time Network Threat Detection.pdf",
+      sections: [
+        { type: 'p', text: "Raw IDS alerts, without visualization, are hard to act on quickly. This project builds a full detection pipeline — Suricata as the intrusion detection/prevention engine, feeding into the Elastic Stack (Elasticsearch, Logstash, Kibana) for real-time analysis and dashboards — tested against real simulated attacks in a 3-machine virtual lab (Kali attacker, Metasploitable target, Suricata/ELK monitoring node)." },
+        { type: 'h2', text: "Architecture" },
+        { type: 'diagram', text: "Attacker (Kali)  →  Target (Metasploitable)  →  Suricata IPS  →  Filebeat/Logstash  →  Elasticsearch  →  Kibana" },
+        { type: 'h2', text: "What It Does" },
+        { type: 'ul', items: [
+          "Suricata inspects live traffic and logs alerts in structured EVE JSON format",
+          "Logstash parses and forwards those logs into Elasticsearch",
+          "Kibana dashboards visualize Top Offenders, Attack Types, Time-based Trends, and Severity",
+          "Deployed via Docker + Vagrant for a reproducible lab environment"
+        ]},
+        { type: 'h2', text: "Real Test Results" },
+        { type: 'p', text: "Simulated Nmap scans, brute-force attempts, and SQL injection attacks were all correctly detected and logged by Suricata, then successfully visualized in Kibana in real time." },
+        { type: 'h2', text: "Key Challenges Solved" },
+        { type: 'challenge', title: "Suricata Wasn't Logging Properly", text: "Fixed a misconfigured suricata.yaml to enable correct EVE JSON output." },
+        { type: 'challenge', title: "Alerts Weren't Reaching Kibana", text: "Traced to an incorrect index pattern; fixed by properly mapping suricata-* in Kibana and verifying ingestion via Elasticsearch's _cat/indices API." },
+        { type: 'challenge', title: "VM Networking Conflicts", text: "Vagrant's default network settings clashed with VirtualBox; resolved by assigning static IPs directly in the Vagrantfile." },
+        { type: 'challenge', title: "High CPU Usage", text: "Suricata was overloaded running too many rules in an inefficient mode; switched to worker mode and trimmed the ruleset, stabilizing performance." },
+        { type: 'h2', text: "Planned Next Steps" },
+        { type: 'p', text: "Automated response (SOAR-style IP blocking), MITRE ATT&CK mapping, ML-based anomaly detection, and multi-node ELK scaling for production use." }
+      ]
+    }
+  },
+
+  init() {
+    this.overlayEl = document.getElementById('reading-overlay');
+    this.contentEl = document.getElementById('reading-content');
+    this.closeBtn = document.getElementById('reading-close-btn');
+    if (!this.overlayEl || !this.contentEl) return;
+
+    this.closeBtn.addEventListener('click', () => this.close());
+
+    this.overlayEl.addEventListener('click', (e) => {
+      if (e.target === this.overlayEl) this.close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.overlayEl.classList.contains('open')) this.close();
+    });
+
+    document.querySelectorAll('[data-read-article]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.open(el.dataset.readArticle);
+      });
+    });
+  },
+
+  open(articleKey) {
+    const article = this.articles[articleKey];
+    if (!article) return;
+
+    const sectionsHtml = article.sections.map(section => {
+      if (section.type === 'p') return `<p>${this.escapeHtml(section.text)}</p>`;
+      if (section.type === 'h2') return `<h2>${this.escapeHtml(section.text)}</h2>`;
+      if (section.type === 'diagram') return `<div class="reading-diagram">${this.escapeHtml(section.text)}</div>`;
+      if (section.type === 'challenge') return `<div class="reading-challenge"><strong>${this.escapeHtml(section.title)}:</strong> ${this.escapeHtml(section.text)}</div>`;
+      if (section.type === 'ul') {
+        const items = section.items.map(i => `<li>${this.escapeHtml(i)}</li>`).join('');
+        return `<ul>${items}</ul>`;
+      }
+      return '';
+    }).join('');
+
+    this.contentEl.innerHTML = `
+      <h1>${this.escapeHtml(article.title)}</h1>
+      <div class="reading-subtitle">${this.escapeHtml(article.subtitle)}</div>
+      ${sectionsHtml}
+      <a href="${article.pdfLink}" target="_blank" class="reading-pdf-link">📄 Read Full Technical Report (PDF)</a>
+    `;
+
+    this.overlayEl.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  },
+
+  close() {
+    this.overlayEl.classList.remove('open');
+    document.body.style.overflow = '';
+  },
+
+  escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+};
+
+App.writingsReader.init();
 </script>
 </body>
 </html>
